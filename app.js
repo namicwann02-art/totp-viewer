@@ -93,28 +93,36 @@ async function decodeQrFromFile(file) {
 
 // --- Neon card-border runner: driven by rAF instead of CSS animations,
 // since CSS animation-delay lists interacting with per-class specificity
-// proved fragile. Each of the 3 dashes gets an explicit dash-offset
-// (position around the border) and hue (color) computed every frame. ---
+// proved fragile. One single dash travels the border, but it's built from
+// 4 adjacent bands (each 25% of the dash's length) so the dash itself
+// reads as multi-colored, and each band's hue keeps drifting over time so
+// the whole thing shimmers instead of just sliding as a flat color. ---
 
 const FRAME_RUNNER_PERIMETER = 392; // matches the rect's normalized 100-unit path length
 const FRAME_RUNNER_SPEED = FRAME_RUNNER_PERIMETER / 6; // units/sec — one full lap every 6s
-const FRAME_RUNNER_HUE_SPEED = 360 / 4; // deg/sec — one full color cycle every 4s
-const FRAME_RUNNER_PHASES = { 'fr-a': 0, 'fr-b': 1 / 3, 'fr-c': 2 / 3 };
+const FRAME_RUNNER_HUE_SPEED = 360 / 3; // deg/sec — one full color cycle every 3s
+const FRAME_RUNNER_BAND_LENGTH = 10; // units — each band is 25% of the 40-unit dash
+const FRAME_RUNNER_BAND_GAP = FRAME_RUNNER_PERIMETER - FRAME_RUNNER_BAND_LENGTH; // 1 visible band per lap
+const FRAME_RUNNER_BANDS = ['fr-0', 'fr-1', 'fr-2', 'fr-3'];
 
 function startFrameRunnerLoop() {
   function tick(timestampMs) {
     const t = timestampMs / 1000;
     document.querySelectorAll('.frame-runner rect').forEach((rect) => {
-      const phaseName = Object.keys(FRAME_RUNNER_PHASES).find((c) => rect.classList.contains(c));
-      const phase = FRAME_RUNNER_PHASES[phaseName] || 0;
+      const bandIndex = FRAME_RUNNER_BANDS.findIndex((c) => rect.classList.contains(c));
+      if (bandIndex === -1) return;
 
-      const dashOffset = -(((t * FRAME_RUNNER_SPEED) + phase * FRAME_RUNNER_PERIMETER) % FRAME_RUNNER_PERIMETER);
+      // All 4 bands share the same travel speed, staggered by exactly one
+      // band-length each, so they stay glued together end-to-end as one
+      // moving dash rather than spreading out around the whole border.
+      const basePosition = (t * FRAME_RUNNER_SPEED) % FRAME_RUNNER_PERIMETER;
+      const dashOffset = -((basePosition + bandIndex * FRAME_RUNNER_BAND_LENGTH) % FRAME_RUNNER_PERIMETER);
       rect.style.strokeDashoffset = dashOffset;
 
-      const hue = ((t * FRAME_RUNNER_HUE_SPEED) + phase * 360) % 360;
+      const hue = ((t * FRAME_RUNNER_HUE_SPEED) + bandIndex * 90) % 360;
       const color = `hsl(${hue.toFixed(1)}, 100%, 55%)`;
       rect.style.stroke = color;
-      rect.style.filter = `drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px ${color}) drop-shadow(0 0 14px ${color})`;
+      rect.style.filter = `drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px ${color}) drop-shadow(0 0 12px ${color})`;
     });
     requestAnimationFrame(tick);
   }
@@ -158,9 +166,10 @@ function renderAccountList(accounts) {
       </div>
       <div class="account-view">
         <svg class="frame-runner" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <rect class="fr-a" x="1" y="1" width="98" height="98" rx="6" ry="6"></rect>
-          <rect class="fr-b" x="1" y="1" width="98" height="98" rx="6" ry="6"></rect>
-          <rect class="fr-c" x="1" y="1" width="98" height="98" rx="6" ry="6"></rect>
+          <rect class="fr-0" x="1" y="1" width="98" height="98" rx="6" ry="6"></rect>
+          <rect class="fr-1" x="1" y="1" width="98" height="98" rx="6" ry="6"></rect>
+          <rect class="fr-2" x="1" y="1" width="98" height="98" rx="6" ry="6"></rect>
+          <rect class="fr-3" x="1" y="1" width="98" height="98" rx="6" ry="6"></rect>
         </svg>
         <div class="account-info">
           <div class="account-issuer">${escapeHtml(issuer)}</div>

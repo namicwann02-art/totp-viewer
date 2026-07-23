@@ -194,14 +194,15 @@ main {
 /* Position (stroke-dashoffset) and color (stroke + filter) are driven
    directly by a requestAnimationFrame loop in app.js, not CSS animations —
    CSS animation-delay lists interacting with per-class specificity proved
-   fragile (see git history). JS gives each of the 3 dashes an explicit,
-   unambiguous position and color every frame. */
+   fragile (see git history). JS gives each of the 4 bands (which together
+   form one 40-unit multi-color dash) an explicit position and color every
+   frame; each band is a 10-unit visible segment out of the 392-unit path. */
 .frame-runner rect {
   fill: none;
   stroke-width: 2;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
-  stroke-dasharray: 30 362;
+  stroke-dasharray: 10 382;
 }
 
 .account-view > * {
