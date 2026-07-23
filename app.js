@@ -106,11 +106,11 @@ async function decodeQrFromFile(file) {
 
 const FRAME_RUNNER_HUE = 150; // fixed green hue (matches --accent), no more rainbow cycling
 const FRAME_RUNNER_BAND_COUNT = 36; // thin bands blending into one smooth line
-const FRAME_RUNNER_BAND_LENGTH = 4; // px per band (36 x 4 = 144px dash — longer)
-const FRAME_RUNNER_SPEED = 45; // px/sec — slowed down from the previous fast orbit
-const FRAME_RUNNER_WAVE_AMPLITUDE = 7; // px the vine pokes inward off the straight edge
-const FRAME_RUNNER_WAVE_LENGTH = 26; // px per full sine wave cycle
-const FRAME_RUNNER_WAVE_STEP = 4; // px between sampled points — small = smooth curve
+const FRAME_RUNNER_BAND_LENGTH = 4; // px per band (36 x 4 = 144px dash)
+const FRAME_RUNNER_SPEED = 67.5; // px/sec — 1.5x the previous speed
+const FRAME_RUNNER_WAVE_AMPLITUDE = 10; // px the vine pokes inward — sharper, more jagged
+const FRAME_RUNNER_WAVE_LENGTH = 14; // px per wave cycle — shorter = more jagged, lightning-like
+const FRAME_RUNNER_WAVE_STEP = 4; // px between sampled points
 
 function frameRunnerSvgMarkup() {
   const bands = Array.from({ length: FRAME_RUNNER_BAND_COUNT }, (_, i) =>
@@ -169,6 +169,11 @@ function startFrameRunnerLoop() {
       const pathLength = Number(svg.dataset.pathLength);
       if (!pathLength) return;
 
+      // One shared lightning-flicker value per frame (not per-band) so
+      // the whole dash flashes together, like a real bolt strobing.
+      const flickerPhase = Math.sin(t * 22) + Math.sin(t * 37 + 1.7);
+      const flickerBoost = flickerPhase > 0.9 ? 22 : 0;
+
       svg.querySelectorAll('path.fr-band').forEach((path) => {
         const bandIndex = Number(path.dataset.band);
         const dashOffset = -((t * FRAME_RUNNER_SPEED) + bandIndex * FRAME_RUNNER_BAND_LENGTH);
@@ -176,12 +181,15 @@ function startFrameRunnerLoop() {
         path.style.strokeDashoffset = dashOffset;
 
         // Fixed green, with a gentle brightness shimmer along the dash's
-        // length (not a color cycle) so it still feels alive.
-        const lightness = 45 + 20 * Math.sin((bandIndex / FRAME_RUNNER_BAND_COUNT) * Math.PI * 2 + t * 2);
+        // length, plus an occasional sharp lightning-like flash on top.
+        const baseLightness = 45 + 20 * Math.sin((bandIndex / FRAME_RUNNER_BAND_COUNT) * Math.PI * 2 + t * 2);
+        const lightness = Math.min(baseLightness + flickerBoost, 92);
         const color = `hsl(${FRAME_RUNNER_HUE}, 100%, ${lightness.toFixed(1)}%)`;
         path.style.stroke = color;
+        const glowBoost = flickerBoost ? 1.6 : 1;
         path.style.filter =
-          `drop-shadow(0 0 1px #fff) drop-shadow(0 0 5px ${color}) drop-shadow(0 0 10px ${color}) drop-shadow(0 0 18px ${color})`;
+          `drop-shadow(0 0 1px #fff) drop-shadow(0 0 ${5 * glowBoost}px ${color}) ` +
+          `drop-shadow(0 0 ${10 * glowBoost}px ${color}) drop-shadow(0 0 ${18 * glowBoost}px ${color})`;
       });
     });
     requestAnimationFrame(tick);
