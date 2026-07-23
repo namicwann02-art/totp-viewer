@@ -91,6 +91,36 @@ async function decodeQrFromFile(file) {
   }
 }
 
+// --- Neon card-border runner: driven by rAF instead of CSS animations,
+// since CSS animation-delay lists interacting with per-class specificity
+// proved fragile. Each of the 3 dashes gets an explicit dash-offset
+// (position around the border) and hue (color) computed every frame. ---
+
+const FRAME_RUNNER_PERIMETER = 392; // matches the rect's normalized 100-unit path length
+const FRAME_RUNNER_SPEED = FRAME_RUNNER_PERIMETER / 6; // units/sec — one full lap every 6s
+const FRAME_RUNNER_HUE_SPEED = 360 / 4; // deg/sec — one full color cycle every 4s
+const FRAME_RUNNER_PHASES = { 'fr-a': 0, 'fr-b': 1 / 3, 'fr-c': 2 / 3 };
+
+function startFrameRunnerLoop() {
+  function tick(timestampMs) {
+    const t = timestampMs / 1000;
+    document.querySelectorAll('.frame-runner rect').forEach((rect) => {
+      const phaseName = Object.keys(FRAME_RUNNER_PHASES).find((c) => rect.classList.contains(c));
+      const phase = FRAME_RUNNER_PHASES[phaseName] || 0;
+
+      const dashOffset = -(((t * FRAME_RUNNER_SPEED) + phase * FRAME_RUNNER_PERIMETER) % FRAME_RUNNER_PERIMETER);
+      rect.style.strokeDashoffset = dashOffset;
+
+      const hue = ((t * FRAME_RUNNER_HUE_SPEED) + phase * 360) % 360;
+      const color = `hsl(${hue.toFixed(1)}, 100%, 55%)`;
+      rect.style.stroke = color;
+      rect.style.filter = `drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px ${color}) drop-shadow(0 0 14px ${color})`;
+    });
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
 // --- UI wiring ---
 
 const els = {};
@@ -603,6 +633,7 @@ function init() {
   renderAccountList(accounts);
   refreshAllCodes();
   setInterval(tick, 1000);
+  startFrameRunnerLoop();
 
   initCloudSync();
 }
