@@ -55,6 +55,9 @@ async function decodeQrFromFile(file) {
 // --- UI wiring ---
 
 const els = {};
+const SWIPE_WIDTH = 112; // px revealed by the edit+delete swipe actions
+let openSwipeLi = null;
+let activeContextMenu = null;
 
 function qs(id) {
   return document.getElementById(id);
@@ -67,23 +70,27 @@ function showStatus(message, isError = false) {
 }
 
 function renderAccountList(accounts) {
+  openSwipeLi = null;
+  removeContextMenu();
   els.emptyState.classList.toggle('hidden', accounts.length > 0);
   els.list.innerHTML = '';
   for (const account of accounts) {
     const li = document.createElement('li');
     li.className = 'account';
     li.dataset.id = account.id;
+    li.dataset.swipeX = '0';
     const { issuer, name } = displayLabel(account);
     li.innerHTML = `
+      <div class="account-actions">
+        <button class="action-btn action-edit" data-role="edit" title="Düzenle">✎</button>
+        <button class="action-btn action-remove" data-role="remove" title="Sil">✕</button>
+      </div>
       <div class="account-view">
         <div class="account-info">
           <div class="account-issuer">${escapeHtml(issuer)}</div>
           <div class="account-name">${escapeHtml(name)}</div>
         </div>
-        <div class="account-code" data-role="code">------</div>
-        <button class="edit-btn" data-role="edit" title="İsim ver">✎</button>
-        <button class="copy-btn" data-role="copy" title="Kopyala">⧉</button>
-        <button class="remove-btn" data-role="remove" title="Kaldır">✕</button>
+        <div class="account-code" data-role="code" title="Kopyalamak için dokunun">------</div>
       </div>
       <div class="account-edit hidden">
         <input type="text" data-role="edit-issuer" placeholder="Servis adı (ör. Google)" value="${escapeHtml(account.issuer || '')}">
@@ -95,6 +102,107 @@ function renderAccountList(accounts) {
       </div>
     `;
     els.list.appendChild(li);
+    attachSwipeHandlers(li);
+    attachContextMenu(li);
+  }
+}
+
+function closeSwipe(li) {
+  const view = li.querySelector('.account-view');
+  view.style.transform = '';
+  li.dataset.swipeX = '0';
+  if (openSwipeLi === li) openSwipeLi = null;
+}
+
+function openSwipe(li) {
+  if (openSwipeLi && openSwipeLi !== li) closeSwipe(openSwipeLi);
+  const view = li.querySelector('.account-view');
+  view.style.transform = `translateX(-${SWIPE_WIDTH}px)`;
+  li.dataset.swipeX = String(-SWIPE_WIDTH);
+  openSwipeLi = li;
+}
+
+function attachSwipeHandlers(li) {
+  const view = li.querySelector('.account-view');
+  let startX = 0;
+  let startY = 0;
+  let baseX = 0;
+  let dragging = false;
+  let moved = false;
+
+  view.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    baseX = parseFloat(li.dataset.swipeX || '0');
+    dragging = true;
+    moved = false;
+  }, { passive: true });
+
+  view.addEventListener('touchmove', (e) => {
+    if (!dragging) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+    if (Math.abs(dx) < Math.abs(dy)) return; // vertical scroll, let the page handle it
+    moved = true;
+    const next = Math.max(-SWIPE_WIDTH, Math.min(0, baseX + dx));
+    view.style.transform = `translateX(${next}px)`;
+  }, { passive: true });
+
+  view.addEventListener('touchend', () => {
+    if (!dragging) return;
+    dragging = false;
+    const match = view.style.transform.match(/-?\d+(\.\d+)?/);
+    const current = match ? parseFloat(match[0]) : 0;
+    if (current < -SWIPE_WIDTH / 2) {
+      openSwipe(li);
+    } else {
+      closeSwipe(li);
+    }
+    if (moved) {
+      li.dataset.suppressClick = '1';
+      setTimeout(() => { delete li.dataset.suppressClick; }, 50);
+    }
+  });
+}
+
+function attachContextMenu(li) {
+  li.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    showContextMenu(e.clientX, e.clientY, li);
+  });
+}
+
+function showContextMenu(x, y, li) {
+  removeContextMenu();
+  const menu = document.createElement('div');
+  menu.className = 'context-menu';
+  menu.innerHTML = `
+    <button data-role="edit">✎ Düzenle</button>
+    <button data-role="remove">✕ Sil</button>
+  `;
+  document.body.appendChild(menu);
+  const menuWidth = menu.offsetWidth;
+  const menuHeight = menu.offsetHeight;
+  menu.style.left = Math.min(x, window.innerWidth - menuWidth - 8) + 'px';
+  menu.style.top = Math.min(y, window.innerHeight - menuHeight - 8) + 'px';
+  menu.addEventListener('click', (e) => {
+    const role = e.target.dataset.role;
+    if (role === 'edit') startEdit(li);
+    else if (role === 'remove') removeAccountById(li.dataset.id);
+    removeContextMenu();
+  });
+  activeContextMenu = menu;
+  setTimeout(() => {
+    document.addEventListener('click', removeContextMenu, { once: true });
+    document.addEventListener('contextmenu', removeContextMenu, { once: true });
+  }, 0);
+}
+
+function removeContextMenu() {
+  if (activeContextMenu) {
+    activeContextMenu.remove();
+    activeContextMenu = null;
   }
 }
 
@@ -152,45 +260,66 @@ function tick() {
   }
 }
 
+function startEdit(li) {
+  closeSwipe(li);
+  li.querySelector('.account-view').classList.add('hidden');
+  li.querySelector('.account-edit').classList.remove('hidden');
+  li.querySelector('[data-role="edit-issuer"]').focus();
+}
+
+function cancelEdit(li) {
+  li.querySelector('.account-edit').classList.add('hidden');
+  li.querySelector('.account-view').classList.remove('hidden');
+}
+
+function saveEdit(li, id) {
+  const issuerVal = li.querySelector('[data-role="edit-issuer"]').value.trim();
+  const nameVal = li.querySelector('[data-role="edit-name"]').value.trim();
+  const accounts = loadAccounts();
+  const account = accounts.find(a => a.id === id);
+  if (account) {
+    account.issuer = issuerVal;
+    account.name = nameVal;
+    saveAccounts(accounts);
+  }
+  renderAccountList(accounts);
+  refreshAllCodes();
+}
+
+function removeAccountById(id) {
+  const accounts = loadAccounts().filter(a => a.id !== id);
+  saveAccounts(accounts);
+  renderAccountList(accounts);
+  refreshAllCodes();
+}
+
+function copyCode(li) {
+  const codeEl = li.querySelector('[data-role="code"]');
+  const raw = codeEl.dataset.rawCode;
+  if (raw) {
+    navigator.clipboard?.writeText(raw);
+    showStatus('Kopyalandı.');
+    setTimeout(() => showStatus(''), 1500);
+  }
+}
+
 function handleListClick(e) {
   const li = e.target.closest('li.account');
   if (!li) return;
+  if (li.dataset.suppressClick) return; // this click was the tail end of a swipe drag
   const id = li.dataset.id;
-
   const role = e.target.dataset.role;
 
-  if (role === 'remove') {
-    const accounts = loadAccounts().filter(a => a.id !== id);
-    saveAccounts(accounts);
-    renderAccountList(accounts);
-    refreshAllCodes();
-  } else if (role === 'copy') {
-    const codeEl = li.querySelector('[data-role="code"]');
-    const raw = codeEl.dataset.rawCode;
-    if (raw) {
-      navigator.clipboard?.writeText(raw);
-      showStatus('Kopyalandı.');
-      setTimeout(() => showStatus(''), 1500);
-    }
+  if (role === 'code') {
+    copyCode(li);
+  } else if (role === 'remove') {
+    removeAccountById(id);
   } else if (role === 'edit') {
-    li.querySelector('.account-view').classList.add('hidden');
-    li.querySelector('.account-edit').classList.remove('hidden');
-    li.querySelector('[data-role="edit-issuer"]').focus();
+    startEdit(li);
   } else if (role === 'cancel-edit') {
-    li.querySelector('.account-edit').classList.add('hidden');
-    li.querySelector('.account-view').classList.remove('hidden');
+    cancelEdit(li);
   } else if (role === 'save-edit') {
-    const issuerVal = li.querySelector('[data-role="edit-issuer"]').value.trim();
-    const nameVal = li.querySelector('[data-role="edit-name"]').value.trim();
-    const accounts = loadAccounts();
-    const account = accounts.find(a => a.id === id);
-    if (account) {
-      account.issuer = issuerVal;
-      account.name = nameVal;
-      saveAccounts(accounts);
-    }
-    renderAccountList(accounts);
-    refreshAllCodes();
+    saveEdit(li, id);
   }
 }
 
@@ -244,6 +373,12 @@ function init() {
   els.list.addEventListener('click', handleListClick);
   els.fileInput.addEventListener('change', handleFileImport);
   qs('import-btn').addEventListener('click', () => els.fileInput.click());
+
+  document.addEventListener('click', (e) => {
+    if (openSwipeLi && !openSwipeLi.contains(e.target)) {
+      closeSwipe(openSwipeLi);
+    }
+  });
 
   if (window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
