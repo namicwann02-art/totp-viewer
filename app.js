@@ -93,36 +93,42 @@ async function decodeQrFromFile(file) {
 
 // --- Neon card-border runner: driven by rAF instead of CSS animations,
 // since CSS animation-delay lists interacting with per-class specificity
-// proved fragile. One single dash travels the border, but it's built from
-// 4 adjacent bands (each 25% of the dash's length) so the dash itself
-// reads as multi-colored, and each band's hue keeps drifting over time so
-// the whole thing shimmers instead of just sliding as a flat color. ---
+// proved fragile. One single dash travels the border, built from many thin
+// adjacent bands so it blends into one continuous line instead of reading
+// as separate chunks, while its hue sweeps smoothly across the dash's
+// length and keeps drifting over time for a lively neon shimmer. ---
 
 const FRAME_RUNNER_PERIMETER = 392; // matches the rect's normalized 100-unit path length
 const FRAME_RUNNER_SPEED = FRAME_RUNNER_PERIMETER / 6; // units/sec — one full lap every 6s
-const FRAME_RUNNER_HUE_SPEED = 360 / 3; // deg/sec — one full color cycle every 3s
-const FRAME_RUNNER_BAND_LENGTH = 10; // units — each band is 25% of the 40-unit dash
-const FRAME_RUNNER_BAND_GAP = FRAME_RUNNER_PERIMETER - FRAME_RUNNER_BAND_LENGTH; // 1 visible band per lap
-const FRAME_RUNNER_BANDS = ['fr-0', 'fr-1', 'fr-2', 'fr-3'];
+const FRAME_RUNNER_HUE_SPEED = 360 / 2.5; // deg/sec — full color cycle every 2.5s, lively
+const FRAME_RUNNER_BAND_COUNT = 20; // thin bands blending into one smooth line
+const FRAME_RUNNER_BAND_LENGTH = 2; // units per band (20 x 2 = 40-unit dash)
+
+function frameRunnerSvgMarkup() {
+  const bands = Array.from({ length: FRAME_RUNNER_BAND_COUNT }, (_, i) =>
+    `<rect class="fr-band" data-band="${i}" x="1" y="1" width="98" height="98" rx="6" ry="6"></rect>`
+  ).join('');
+  return `<svg class="frame-runner" viewBox="0 0 100 100" preserveAspectRatio="none">${bands}</svg>`;
+}
 
 function startFrameRunnerLoop() {
   function tick(timestampMs) {
     const t = timestampMs / 1000;
     document.querySelectorAll('.frame-runner rect').forEach((rect) => {
-      const bandIndex = FRAME_RUNNER_BANDS.findIndex((c) => rect.classList.contains(c));
-      if (bandIndex === -1) return;
+      const bandIndex = Number(rect.dataset.band);
 
-      // All 4 bands share the same travel speed, staggered by exactly one
+      // All bands share the same travel speed, staggered by exactly one
       // band-length each, so they stay glued together end-to-end as one
       // moving dash rather than spreading out around the whole border.
       const basePosition = (t * FRAME_RUNNER_SPEED) % FRAME_RUNNER_PERIMETER;
       const dashOffset = -((basePosition + bandIndex * FRAME_RUNNER_BAND_LENGTH) % FRAME_RUNNER_PERIMETER);
       rect.style.strokeDashoffset = dashOffset;
 
-      const hue = ((t * FRAME_RUNNER_HUE_SPEED) + bandIndex * 90) % 360;
-      const color = `hsl(${hue.toFixed(1)}, 100%, 55%)`;
+      const hue = ((t * FRAME_RUNNER_HUE_SPEED) + bandIndex * (360 / FRAME_RUNNER_BAND_COUNT)) % 360;
+      const color = `hsl(${hue.toFixed(1)}, 100%, 60%)`;
       rect.style.stroke = color;
-      rect.style.filter = `drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px ${color}) drop-shadow(0 0 12px ${color})`;
+      rect.style.filter =
+        `drop-shadow(0 0 1px #fff) drop-shadow(0 0 5px ${color}) drop-shadow(0 0 10px ${color}) drop-shadow(0 0 18px ${color})`;
     });
     requestAnimationFrame(tick);
   }
@@ -165,12 +171,7 @@ function renderAccountList(accounts) {
         <button class="action-btn action-remove" data-role="remove" title="Sil">✕</button>
       </div>
       <div class="account-view">
-        <svg class="frame-runner" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <rect class="fr-0" x="1" y="1" width="98" height="98" rx="6" ry="6"></rect>
-          <rect class="fr-1" x="1" y="1" width="98" height="98" rx="6" ry="6"></rect>
-          <rect class="fr-2" x="1" y="1" width="98" height="98" rx="6" ry="6"></rect>
-          <rect class="fr-3" x="1" y="1" width="98" height="98" rx="6" ry="6"></rect>
-        </svg>
+        ${frameRunnerSvgMarkup()}
         <div class="account-info">
           <div class="account-issuer">${escapeHtml(issuer)}</div>
           <div class="account-name">${escapeHtml(name)}</div>
