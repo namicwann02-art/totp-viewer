@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>2FA Kodları</title>
-<script>window.APP_VERSION = 40;</script>
-<link rel="stylesheet" href="style.css?v=40">
+<script>window.APP_VERSION = 41;</script>
+<link rel="stylesheet" href="style.css?v=41">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -35,12 +35,17 @@
     <div class="sync-modal" id="sync-modal-content"></div>
   </div>
 
-  <div id="lightning-flash" class="lightning-flash"></div>
+  <div id="lightning-flash" class="lightning-flash">
+    <svg class="lightning-bolt" viewBox="0 0 100 200" preserveAspectRatio="none">
+      <path d="M58,0 L36,58 L54,64 L28,124 L50,130 L38,150 L60,156 L44,200"></path>
+      <path d="M54,64 L72,80 L58,86" class="lightning-branch"></path>
+    </svg>
+  </div>
 
-  <script src="vendor/jsQR.js?v=40"></script>
-  <script src="totp.js?v=40"></script>
-  <script src="migration-parser.js?v=40"></script>
-  <script src="sync.js?v=40"></script>
-  <script src="app.js?v=40"></script>
+  <script src="vendor/jsQR.js?v=41"></script>
+  <script src="totp.js?v=41"></script>
+  <script src="migration-parser.js?v=41"></script>
+  <script src="sync.js?v=41"></script>
+  <script src="app.js?v=41"></script>
 </body>
 </html>
