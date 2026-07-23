@@ -364,21 +364,10 @@ function updateAllRings() {
   });
 }
 
-function triggerLightningFlash() {
-  const el = els.lightningFlash;
-  if (!el) return;
-  el.classList.remove('active');
-  void el.offsetWidth; // restart the animation if it's still mid-play
-  el.classList.add('active');
-}
-
 function tick() {
   const remaining = window.TOTP.secondsRemaining(30);
   updateProgressBar();
   updateAllRings();
-  if (remaining === 2 && tick.initialized) {
-    triggerLightningFlash();
-  }
   if (remaining === 30 || !tick.initialized) {
     const isFirstLoad = !tick.initialized;
     tick.initialized = true;
@@ -584,7 +573,6 @@ function init() {
   els.fileInput = qs('file-input');
   els.syncOverlay = qs('sync-overlay');
   els.syncModalContent = qs('sync-modal-content');
-  els.lightningFlash = qs('lightning-flash');
 
   els.list.addEventListener('click', handleListClick);
   els.fileInput.addEventListener('change', handleFileImport);

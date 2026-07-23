@@ -447,58 +447,6 @@ footer {
   z-index: 2000;
 }
 
-/* Full-screen lightning-storm transition, played for the 2s leading up to
-   the 30s code reset (triggered from app.js at remaining === 2) so the
-   flash finishes right as the new codes appear. Plain opacity (no
-   mix-blend-mode) so it renders reliably across WebViews; an actual jagged
-   bolt shape (not just an ambient glow) so it visibly reads as lightning. */
-.lightning-flash {
-  position: fixed;
-  inset: 0;
-  z-index: 1500;
-  pointer-events: none;
-  opacity: 0;
-  background: rgba(220, 255, 235, 0.35);
-}
-
-.lightning-bolt {
-  width: 100%;
-  height: 100%;
-}
-
-.lightning-bolt path {
-  fill: none;
-  stroke: #f2fff7;
-  stroke-width: 2;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  filter:
-    drop-shadow(0 0 6px #ffffff)
-    drop-shadow(0 0 18px var(--accent))
-    drop-shadow(0 0 40px var(--accent));
-}
-
-.lightning-branch {
-  stroke-width: 1.4;
-  opacity: 0.85;
-}
-
-.lightning-flash.active {
-  animation: screenLightning 2s ease-out;
-}
-
-@keyframes screenLightning {
-  0% { opacity: 0; }
-  2% { opacity: 1; }
-  5% { opacity: 0.1; }
-  7% { opacity: 1; }
-  10% { opacity: 0; }
-  38% { opacity: 0; }
-  40% { opacity: 0.9; }
-  44% { opacity: 0; }
-  100% { opacity: 0; }
-}
-
 .sync-modal {
   background: var(--tg-bg);
   border: 1px solid rgba(0, 230, 118, 0.25);
