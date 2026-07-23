@@ -106,10 +106,11 @@ async function decodeQrFromFile(file) {
 
 const FRAME_RUNNER_HUE_SPEED = 360 / 1; // deg/sec — full color cycle every 1s, spinning fast
 const FRAME_RUNNER_BAND_COUNT = 20; // thin bands blending into one smooth line
-const FRAME_RUNNER_BAND_LENGTH = 2; // px per band (20 x 2 = 40px dash)
+const FRAME_RUNNER_BAND_LENGTH = 3; // px per band (20 x 3 = 60px dash)
 const FRAME_RUNNER_SPEED = 392 / 2; // px/sec — tuned so a typical card laps in ~2s, quick orbit
-const FRAME_RUNNER_ZIGZAG_AMPLITUDE = 5; // px the zigzag pokes inward off the straight edge
-const FRAME_RUNNER_ZIGZAG_STEP = 14; // px between zigzag peaks
+const FRAME_RUNNER_WAVE_AMPLITUDE = 7; // px the vine pokes inward off the straight edge
+const FRAME_RUNNER_WAVE_LENGTH = 26; // px per full sine wave cycle
+const FRAME_RUNNER_WAVE_STEP = 4; // px between sampled points — small = smooth curve
 
 function frameRunnerSvgMarkup() {
   const bands = Array.from({ length: FRAME_RUNNER_BAND_COUNT }, (_, i) =>
@@ -118,21 +119,22 @@ function frameRunnerSvgMarkup() {
   return `<svg class="frame-runner">${bands}</svg>`;
 }
 
-// Traces a zigzag (sawtooth) path around a w x h rectangle instead of a
-// plain straight border, alternating between the edge itself and a point
-// offset inward by `amplitude` every `step` px, going clockwise from the
-// top-left corner. Returns an SVG path "d" string.
-function buildZigzagRectPath(w, h, amplitude, step) {
+// Traces a smooth, continuous sine wave around a w x h rectangle instead
+// of a plain straight border — a winding "vine" that curls in and out of
+// each edge — rather than the earlier sharp angular zigzag. The wave phase
+// keeps accumulating across corners so it flows seamlessly all the way
+// around instead of resetting at each edge. Returns an SVG path "d" string.
+function buildVineRectPath(w, h, amplitude, wavelength, step) {
   const pts = [];
-  let i = 0;
-  for (let x = 0; x <= w; x += step, i++) pts.push([x, i % 2 === 0 ? 0 : amplitude]);
-  i = 0;
-  for (let y = 0; y <= h; y += step, i++) pts.push([i % 2 === 0 ? w : w - amplitude, y]);
-  i = 0;
-  for (let x = w; x >= 0; x -= step, i++) pts.push([x, i % 2 === 0 ? h : h - amplitude]);
-  i = 0;
-  for (let y = h; y >= 0; y -= step, i++) pts.push([i % 2 === 0 ? 0 : amplitude, y]);
-  return 'M ' + pts.map((p) => p.join(',')).join(' L ') + ' Z';
+  let dist = 0;
+  const off = () => amplitude * Math.sin((2 * Math.PI * dist) / wavelength);
+
+  for (let x = 0; x <= w; x += step) { pts.push([x, off()]); dist += step; }
+  for (let y = 0; y <= h; y += step) { pts.push([w - off(), y]); dist += step; }
+  for (let x = w; x >= 0; x -= step) { pts.push([x, h - off()]); dist += step; }
+  for (let y = h; y >= 0; y -= step) { pts.push([off(), y]); dist += step; }
+
+  return 'M ' + pts.map((p) => `${p[0].toFixed(2)},${p[1].toFixed(2)}`).join(' L ') + ' Z';
 }
 
 // Sizes the frame-runner SVG's viewBox to the card's actual measured pixel
@@ -151,7 +153,7 @@ function initFrameRunner(li) {
   const h = Math.round(box.height);
   if (!w || !h) return;
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-  const d = buildZigzagRectPath(w - 2, h - 2, FRAME_RUNNER_ZIGZAG_AMPLITUDE, FRAME_RUNNER_ZIGZAG_STEP);
+  const d = buildVineRectPath(w - 2, h - 2, FRAME_RUNNER_WAVE_AMPLITUDE, FRAME_RUNNER_WAVE_LENGTH, FRAME_RUNNER_WAVE_STEP);
   const paths = svg.querySelectorAll('path.fr-band');
   paths.forEach((path) => {
     path.setAttribute('d', d);
