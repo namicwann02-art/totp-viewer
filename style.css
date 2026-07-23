@@ -205,9 +205,13 @@ main {
   animation: frameRunnerMove 6s linear infinite, neonHue 4s linear infinite;
 }
 
-.fr-a { animation-delay: 0s, 0s; }
-.fr-b { animation-delay: -2s, -1.33s; }
-.fr-c { animation-delay: -4s, -2.67s; }
+/* Specificity note: ".frame-runner rect" (class+type) outranks a bare
+   single class like ".fr-a", so these per-line delay overrides must be at
+   least as specific — otherwise they're silently ignored and all 3 dashes
+   collapse onto the exact same position/color. */
+.frame-runner rect.fr-a { animation-delay: 0s, 0s; }
+.frame-runner rect.fr-b { animation-delay: -2s, -1.33s; }
+.frame-runner rect.fr-c { animation-delay: -4s, -2.67s; }
 
 @keyframes frameRunnerMove {
   to { stroke-dashoffset: -392; }
