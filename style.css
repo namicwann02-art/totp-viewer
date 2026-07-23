@@ -447,6 +447,36 @@ footer {
   z-index: 2000;
 }
 
+/* Full-screen lightning-storm transition, played for the 2s leading up to
+   the 30s code reset (triggered from app.js at remaining === 2) so the
+   flash finishes right as the new codes appear. mix-blend-mode: screen
+   keeps it looking like light hitting the UI rather than a flat overlay. */
+.lightning-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 25%, rgba(255, 255, 255, 0.95), rgba(0, 230, 118, 0.55) 45%, transparent 75%);
+  mix-blend-mode: screen;
+}
+
+.lightning-flash.active {
+  animation: screenLightning 2s ease-out;
+}
+
+@keyframes screenLightning {
+  0% { opacity: 0; }
+  3% { opacity: 1; }
+  7% { opacity: 0.1; }
+  11% { opacity: 0.85; }
+  16% { opacity: 0; }
+  40% { opacity: 0; }
+  44% { opacity: 0.6; }
+  50% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
 .sync-modal {
   background: var(--tg-bg);
   border: 1px solid rgba(0, 230, 118, 0.25);
