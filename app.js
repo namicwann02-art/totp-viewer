@@ -133,7 +133,7 @@ function renderAccountList(accounts) {
         </div>
         <div class="code-wrap">
           <div class="account-code" data-role="code" title="Kopyalamak için dokunun">
-            <span class="bolt">⚡</span><span class="code-text" data-role="code-text">------</span>
+            <span class="code-text" data-role="code-text">------</span>
           </div>
           <div class="ring-wrap">
             <svg class="ring" viewBox="0 0 36 36">

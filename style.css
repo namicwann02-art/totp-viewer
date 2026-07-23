@@ -229,7 +229,10 @@ main {
 }
 
 .account-info {
+  position: relative;
   min-width: 0;
+  overflow: hidden;
+  border-radius: 6px;
 }
 
 .account-issuer {
@@ -282,34 +285,34 @@ main {
   transform: scale(0.94);
 }
 
-.code-text, .bolt {
+.code-text {
   pointer-events: none;
 }
 
-.bolt {
-  font-size: 13px;
-  margin-right: 5px;
-  filter: drop-shadow(0 0 4px var(--accent-glow));
-  animation: boltFlicker 2.6s ease-in-out infinite;
+/* A bright diagonal streak that zips across the box every few seconds,
+   like a quick lightning flash, then stays hidden until the next pass. */
+@keyframes lightningSweep {
+  0%, 100% { left: -60%; opacity: 0; }
+  3% { opacity: 0.9; }
+  9% { left: 140%; opacity: 0; }
 }
 
-@keyframes boltFlicker {
-  0%, 46%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
-  54% { opacity: 0.5; }
-  72% { opacity: 0.5; }
-  76% { opacity: 1; }
-  80% { opacity: 0.5; }
+.account-code::after,
+.account-info::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 35%;
+  height: 100%;
+  background: linear-gradient(115deg, transparent, rgba(200, 255, 220, 0.85), var(--accent), transparent);
+  transform: skewX(-20deg);
+  animation: lightningSweep 5s ease-in-out infinite;
+  pointer-events: none;
 }
 
-@keyframes boltStrike {
-  0% { opacity: 0.5; filter: drop-shadow(0 0 2px var(--accent-glow)); }
-  30% { opacity: 1; filter: drop-shadow(0 0 10px var(--accent)); }
-  100% { opacity: 0.5; filter: drop-shadow(0 0 4px var(--accent-glow)); }
-}
-
-.account-code.flash .bolt {
-  animation: boltStrike 0.6s ease;
+.account-info::after {
+  animation-delay: 1.4s;
 }
 
 @keyframes codeFlash {
