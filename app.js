@@ -104,10 +104,10 @@ async function decodeQrFromFile(file) {
 // around the path instead of exactly once. Matching viewBox to real pixels
 // 1:1 removes the distortion entirely, no vector-effect hacks needed. ---
 
-const FRAME_RUNNER_HUE_SPEED = 360 / 1; // deg/sec — full color cycle every 1s, spinning fast
-const FRAME_RUNNER_BAND_COUNT = 20; // thin bands blending into one smooth line
-const FRAME_RUNNER_BAND_LENGTH = 3; // px per band (20 x 3 = 60px dash)
-const FRAME_RUNNER_SPEED = 392 / 2; // px/sec — tuned so a typical card laps in ~2s, quick orbit
+const FRAME_RUNNER_HUE = 150; // fixed green hue (matches --accent), no more rainbow cycling
+const FRAME_RUNNER_BAND_COUNT = 36; // thin bands blending into one smooth line
+const FRAME_RUNNER_BAND_LENGTH = 4; // px per band (36 x 4 = 144px dash — longer)
+const FRAME_RUNNER_SPEED = 45; // px/sec — slowed down from the previous fast orbit
 const FRAME_RUNNER_WAVE_AMPLITUDE = 7; // px the vine pokes inward off the straight edge
 const FRAME_RUNNER_WAVE_LENGTH = 26; // px per full sine wave cycle
 const FRAME_RUNNER_WAVE_STEP = 4; // px between sampled points — small = smooth curve
@@ -175,8 +175,10 @@ function startFrameRunnerLoop() {
         path.style.strokeDasharray = `${FRAME_RUNNER_BAND_LENGTH} ${pathLength - FRAME_RUNNER_BAND_LENGTH}`;
         path.style.strokeDashoffset = dashOffset;
 
-        const hue = ((t * FRAME_RUNNER_HUE_SPEED) + bandIndex * (360 / FRAME_RUNNER_BAND_COUNT)) % 360;
-        const color = `hsl(${hue.toFixed(1)}, 100%, 60%)`;
+        // Fixed green, with a gentle brightness shimmer along the dash's
+        // length (not a color cycle) so it still feels alive.
+        const lightness = 45 + 20 * Math.sin((bandIndex / FRAME_RUNNER_BAND_COUNT) * Math.PI * 2 + t * 2);
+        const color = `hsl(${FRAME_RUNNER_HUE}, 100%, ${lightness.toFixed(1)}%)`;
         path.style.stroke = color;
         path.style.filter =
           `drop-shadow(0 0 1px #fff) drop-shadow(0 0 5px ${color}) drop-shadow(0 0 10px ${color}) drop-shadow(0 0 18px ${color})`;
