@@ -104,10 +104,10 @@ async function decodeQrFromFile(file) {
 // around the path instead of exactly once. Matching viewBox to real pixels
 // 1:1 removes the distortion entirely, no vector-effect hacks needed. ---
 
-const FRAME_RUNNER_HUE_SPEED = 360 / 2.5; // deg/sec — full color cycle every 2.5s, lively
+const FRAME_RUNNER_HUE_SPEED = 360 / 1; // deg/sec — full color cycle every 1s, spinning fast
 const FRAME_RUNNER_BAND_COUNT = 20; // thin bands blending into one smooth line
 const FRAME_RUNNER_BAND_LENGTH = 2; // px per band (20 x 2 = 40px dash)
-const FRAME_RUNNER_SPEED = 392 / 6; // px/sec — tuned so a typical card laps in ~6s
+const FRAME_RUNNER_SPEED = 392 / 2; // px/sec — tuned so a typical card laps in ~2s, quick orbit
 
 function frameRunnerSvgMarkup() {
   const bands = Array.from({ length: FRAME_RUNNER_BAND_COUNT }, (_, i) =>
