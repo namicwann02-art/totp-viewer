@@ -314,6 +314,8 @@ main {
   position: relative;
   z-index: 0;
   display: inline-flex;
+  min-width: 96px;
+  justify-content: center;
   cursor: pointer;
   border-radius: 10px;
   transition: transform 0.15s ease;
