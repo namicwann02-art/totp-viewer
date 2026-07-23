@@ -329,16 +329,17 @@ main {
   z-index: 1;
   display: inline-flex;
   align-items: center;
-  margin: 2px;
   padding: 7px 11px;
-  border-radius: 8px;
+  border-radius: 10px;
   background: rgba(0, 230, 118, 0.08);
-  transition: background 0.2s ease;
+  border: 1px solid rgba(0, 230, 118, 0.25);
+  transition: background 0.2s ease, border-color 0.2s ease;
   pointer-events: none;
 }
 
 .account-code:hover .code-fill {
   background: var(--accent-soft);
+  border-color: rgba(0, 230, 118, 0.45);
 }
 
 .code-text {

@@ -136,7 +136,6 @@ function renderAccountList(accounts) {
         </div>
         <div class="code-wrap">
           <div class="account-code" data-role="code" title="Kopyalamak için dokunun">
-            <span class="border-spin"></span>
             <span class="code-fill"><span class="code-text" data-role="code-text">------</span></span>
           </div>
           <div class="ring-wrap">
