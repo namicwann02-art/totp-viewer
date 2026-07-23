@@ -129,7 +129,7 @@ function renderAccountList(accounts) {
       <div class="account-view">
         <div class="account-info">
           <svg class="frame-runner" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <rect x="1" y="1" width="98" height="98" rx="6" ry="6"></rect>
+            <rect x="1.5" y="1.5" width="97" height="97" rx="8" ry="8"></rect>
           </svg>
           <div class="account-issuer">${escapeHtml(issuer)}</div>
           <div class="account-name">${escapeHtml(name)}</div>
@@ -137,7 +137,7 @@ function renderAccountList(accounts) {
         <div class="code-wrap">
           <div class="account-code" data-role="code" title="Kopyalamak için dokunun">
             <svg class="frame-runner" viewBox="0 0 100 100" preserveAspectRatio="none">
-              <rect x="1.5" y="1.5" width="97" height="97" rx="10" ry="10"></rect>
+              <rect x="1.5" y="1.5" width="97" height="97" rx="8" ry="8"></rect>
             </svg>
             <span class="code-text" data-role="code-text">------</span>
           </div>
