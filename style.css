@@ -289,12 +289,15 @@ main {
   pointer-events: none;
 }
 
-/* A bright diagonal streak that zips across the box every few seconds,
-   like a quick lightning flash, then stays hidden until the next pass. */
+/* A thin bright streak that travels fully from the left edge to the right
+   edge of the box, like a quick lightning flash, then hides until the next
+   pass. Fixed pixel width so it looks identical in narrow and wide boxes;
+   `left` (not transform) is used so the travel distance is always the
+   full width of that particular box. */
 @keyframes lightningSweep {
-  0%, 100% { left: -60%; opacity: 0; }
-  3% { opacity: 0.9; }
-  9% { left: 140%; opacity: 0; }
+  0%, 100% { left: -24px; opacity: 0; }
+  4% { opacity: 0.9; }
+  14% { left: calc(100% + 24px); opacity: 0; }
 }
 
 .account-code::after,
@@ -302,17 +305,13 @@ main {
   content: '';
   position: absolute;
   top: 0;
-  left: -60%;
-  width: 35%;
+  left: -24px;
+  width: 18px;
   height: 100%;
-  background: linear-gradient(115deg, transparent, rgba(200, 255, 220, 0.85), var(--accent), transparent);
+  background: linear-gradient(115deg, transparent, rgba(200, 255, 220, 0.9), var(--accent), transparent);
   transform: skewX(-20deg);
   animation: lightningSweep 5s ease-in-out infinite;
   pointer-events: none;
-}
-
-.account-info::after {
-  animation-delay: 1.4s;
 }
 
 @keyframes codeFlash {
