@@ -193,33 +193,33 @@ main {
 
 .frame-runner rect {
   fill: none;
+  stroke: #ff1744;
   stroke-width: 2;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
   stroke-dasharray: 30 362;
-  animation: frameRunnerMove 6s linear infinite;
+  /* two independent animations: one moves the dash around the border,
+     the other continuously cycles its color (and glow) through the full
+     rainbow, so each of the 3 dashes is genuinely "neon RGB" on its own,
+     not just a fixed color. */
+  animation: frameRunnerMove 6s linear infinite, neonHue 4s linear infinite;
 }
 
-.fr-red {
-  stroke: #ff1744;
-  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px #ff1744) drop-shadow(0 0 14px #ff1744);
-  animation-delay: 0s;
-}
-
-.fr-green {
-  stroke: #00e676;
-  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px #00e676) drop-shadow(0 0 14px #00e676);
-  animation-delay: -2s;
-}
-
-.fr-blue {
-  stroke: #2979ff;
-  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px #2979ff) drop-shadow(0 0 14px #2979ff);
-  animation-delay: -4s;
-}
+.fr-a { animation-delay: 0s, 0s; }
+.fr-b { animation-delay: -2s, -1.33s; }
+.fr-c { animation-delay: -4s, -2.67s; }
 
 @keyframes frameRunnerMove {
   to { stroke-dashoffset: -392; }
+}
+
+@keyframes neonHue {
+  from {
+    filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px #ff1744) drop-shadow(0 0 14px #ff1744) hue-rotate(0deg);
+  }
+  to {
+    filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px #ff1744) drop-shadow(0 0 14px #ff1744) hue-rotate(360deg);
+  }
 }
 
 .account-view > * {
