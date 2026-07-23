@@ -91,112 +91,6 @@ async function decodeQrFromFile(file) {
   }
 }
 
-// --- Neon card-border runner: driven by rAF, one dash built from many
-// thin adjacent bands so it blends into one continuous line, hue sweeping
-// smoothly along it and drifting over time for a lively shimmer.
-//
-// IMPORTANT: the SVG's viewBox is set to the card's REAL pixel size (done
-// in initFrameRunner, after layout), not a normalized 100x100 box stretched
-// via preserveAspectRatio="none". That stretching was the actual bug behind
-// every earlier "looks like several separate pieces" report — a non-square
-// box stretched non-uniformly distorts stroke-dasharray lengths differently
-// on each edge, making the pattern repeat an inconsistent number of times
-// around the path instead of exactly once. Matching viewBox to real pixels
-// 1:1 removes the distortion entirely, no vector-effect hacks needed. ---
-
-const FRAME_RUNNER_HUE = 150; // fixed green hue (matches --accent), no more rainbow cycling
-const FRAME_RUNNER_BAND_COUNT = 36; // thin bands blending into one smooth line
-const FRAME_RUNNER_BAND_LENGTH = 4; // px per band (36 x 4 = 144px dash)
-const FRAME_RUNNER_SPEED = 67.5; // px/sec — 1.5x the previous speed
-const FRAME_RUNNER_WAVE_AMPLITUDE = 10; // px the vine pokes inward — sharper, more jagged
-const FRAME_RUNNER_WAVE_LENGTH = 14; // px per wave cycle — shorter = more jagged, lightning-like
-const FRAME_RUNNER_WAVE_STEP = 4; // px between sampled points
-
-function frameRunnerSvgMarkup() {
-  const bands = Array.from({ length: FRAME_RUNNER_BAND_COUNT }, (_, i) =>
-    `<path class="fr-band" data-band="${i}"></path>`
-  ).join('');
-  return `<svg class="frame-runner">${bands}</svg>`;
-}
-
-// Traces a smooth, continuous sine wave around a w x h rectangle instead
-// of a plain straight border — a winding "vine" that curls in and out of
-// each edge — rather than the earlier sharp angular zigzag. The wave phase
-// keeps accumulating across corners so it flows seamlessly all the way
-// around instead of resetting at each edge. Returns an SVG path "d" string.
-function buildVineRectPath(w, h, amplitude, wavelength, step) {
-  const pts = [];
-  let dist = 0;
-  const off = () => amplitude * Math.sin((2 * Math.PI * dist) / wavelength);
-
-  for (let x = 0; x <= w; x += step) { pts.push([x, off()]); dist += step; }
-  for (let y = 0; y <= h; y += step) { pts.push([w - off(), y]); dist += step; }
-  for (let x = w; x >= 0; x -= step) { pts.push([x, h - off()]); dist += step; }
-  for (let y = h; y >= 0; y -= step) { pts.push([off(), y]); dist += step; }
-
-  return 'M ' + pts.map((p) => `${p[0].toFixed(2)},${p[1].toFixed(2)}`).join(' L ') + ' Z';
-}
-
-// Sizes the frame-runner SVG's viewBox to the card's actual measured pixel
-// dimensions and builds the zigzag path for its bands. Must run after the
-// element is laid out in the DOM (getBoundingClientRect needs real layout).
-// Uses path.getTotalLength() — the browser's own exact path length — for
-// the dash math instead of a hand-computed perimeter formula, so it can't
-// drift out of sync with what's actually rendered (see git history for
-// what went wrong the last few times that assumption didn't hold).
-function initFrameRunner(li) {
-  const card = li.querySelector('.account-view');
-  const svg = li.querySelector('.frame-runner');
-  if (!card || !svg) return;
-  const box = card.getBoundingClientRect();
-  const w = Math.round(box.width);
-  const h = Math.round(box.height);
-  if (!w || !h) return;
-  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-  const d = buildVineRectPath(w - 2, h - 2, FRAME_RUNNER_WAVE_AMPLITUDE, FRAME_RUNNER_WAVE_LENGTH, FRAME_RUNNER_WAVE_STEP);
-  const paths = svg.querySelectorAll('path.fr-band');
-  paths.forEach((path) => {
-    path.setAttribute('d', d);
-    path.setAttribute('transform', 'translate(1,1)');
-  });
-  svg.dataset.pathLength = paths[0] ? paths[0].getTotalLength() : 0;
-}
-
-function startFrameRunnerLoop() {
-  function tick(timestampMs) {
-    const t = timestampMs / 1000;
-    document.querySelectorAll('.frame-runner').forEach((svg) => {
-      const pathLength = Number(svg.dataset.pathLength);
-      if (!pathLength) return;
-
-      // One shared lightning-flicker value per frame (not per-band) so
-      // the whole dash flashes together, like a real bolt strobing.
-      const flickerPhase = Math.sin(t * 22) + Math.sin(t * 37 + 1.7);
-      const flickerBoost = flickerPhase > 0.9 ? 22 : 0;
-
-      svg.querySelectorAll('path.fr-band').forEach((path) => {
-        const bandIndex = Number(path.dataset.band);
-        const dashOffset = -((t * FRAME_RUNNER_SPEED) + bandIndex * FRAME_RUNNER_BAND_LENGTH);
-        path.style.strokeDasharray = `${FRAME_RUNNER_BAND_LENGTH} ${pathLength - FRAME_RUNNER_BAND_LENGTH}`;
-        path.style.strokeDashoffset = dashOffset;
-
-        // Fixed green, with a gentle brightness shimmer along the dash's
-        // length, plus an occasional sharp lightning-like flash on top.
-        const baseLightness = 45 + 20 * Math.sin((bandIndex / FRAME_RUNNER_BAND_COUNT) * Math.PI * 2 + t * 2);
-        const lightness = Math.min(baseLightness + flickerBoost, 92);
-        const color = `hsl(${FRAME_RUNNER_HUE}, 100%, ${lightness.toFixed(1)}%)`;
-        path.style.stroke = color;
-        const glowBoost = flickerBoost ? 1.6 : 1;
-        path.style.filter =
-          `drop-shadow(0 0 1px #fff) drop-shadow(0 0 ${5 * glowBoost}px ${color}) ` +
-          `drop-shadow(0 0 ${10 * glowBoost}px ${color}) drop-shadow(0 0 ${18 * glowBoost}px ${color})`;
-      });
-    });
-    requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
-}
-
 // --- UI wiring ---
 
 const els = {};
@@ -233,7 +127,6 @@ function renderAccountList(accounts) {
         <button class="action-btn action-remove" data-role="remove" title="Sil">✕</button>
       </div>
       <div class="account-view">
-        ${frameRunnerSvgMarkup()}
         <div class="account-info">
           <div class="account-issuer">${escapeHtml(issuer)}</div>
           <div class="account-name">${escapeHtml(name)}</div>
@@ -264,7 +157,6 @@ function renderAccountList(accounts) {
     els.list.appendChild(li);
     attachSwipeHandlers(li);
     attachContextMenu(li);
-    initFrameRunner(li);
   }
   updateAllRings();
 }
@@ -706,7 +598,6 @@ function init() {
   renderAccountList(accounts);
   refreshAllCodes();
   setInterval(tick, 1000);
-  startFrameRunnerLoop();
 
   initCloudSync();
 }
