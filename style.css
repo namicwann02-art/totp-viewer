@@ -1,20 +1,15 @@
 :root {
-  --tg-bg: #ffffff;
-  --tg-text: #1c1c1e;
-  --tg-hint: #8e8e93;
-  --tg-link: #007aff;
-  --tg-button: #007aff;
-  --tg-button-text: #ffffff;
-  --tg-secondary-bg: #f2f2f7;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --tg-bg: #1c1c1e;
-    --tg-text: #ffffff;
-    --tg-hint: #8e8e93;
-    --tg-secondary-bg: #2c2c2e;
-  }
+  --tg-bg: #060807;
+  --tg-text: #eafff2;
+  --tg-hint: #6f8f7c;
+  --tg-link: #00e676;
+  --tg-button: #00c853;
+  --tg-button-text: #04140a;
+  --tg-secondary-bg: #10140f;
+  --accent: #00e676;
+  --accent-soft: rgba(0, 230, 118, 0.15);
+  --accent-glow: rgba(0, 230, 118, 0.35);
+  --danger: #ff5252;
 }
 
 * { box-sizing: border-box; }
@@ -22,7 +17,9 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: var(--tg-bg);
+  background:
+    radial-gradient(circle at 15% 0%, rgba(0, 230, 118, 0.08), transparent 45%),
+    var(--tg-bg);
   color: var(--tg-text);
   min-height: 100vh;
   display: flex;
@@ -36,6 +33,8 @@ header {
 h1 {
   font-size: 20px;
   margin: 0 0 12px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 18px var(--accent-glow);
 }
 
 .progress-track {
@@ -48,12 +47,14 @@ h1 {
 .progress-fill {
   height: 100%;
   width: 100%;
-  background: var(--tg-link);
-  transition: width 1s linear;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+  transition: width 1s linear, background 0.3s ease;
 }
 
 .progress-fill.low {
-  background: #ff3b30;
+  background: var(--danger);
+  box-shadow: 0 0 8px rgba(255, 82, 82, 0.5);
 }
 
 main {
@@ -71,8 +72,8 @@ main {
 }
 
 .status.error {
-  background: #ff3b3022;
-  color: #ff3b30;
+  background: rgba(255, 82, 82, 0.15);
+  color: var(--danger);
 }
 
 .hidden { display: none !important; }
@@ -98,10 +99,16 @@ main {
   gap: 8px;
 }
 
+@keyframes accountIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .account {
   position: relative;
   border-radius: 12px;
   overflow: hidden;
+  animation: accountIn 0.35s ease both;
 }
 
 .account-actions {
@@ -122,8 +129,8 @@ main {
   cursor: pointer;
 }
 
-.action-edit { background: var(--tg-link); }
-.action-remove { background: #ff3b30; }
+.action-edit { background: var(--accent); color: #04140a; }
+.action-remove { background: var(--danger); }
 
 .account-view {
   position: relative;
@@ -133,15 +140,24 @@ main {
   align-items: center;
   gap: 12px;
   background: var(--tg-secondary-bg);
+  border: 1px solid rgba(0, 230, 118, 0.18);
+  border-left: 3px solid var(--accent);
   padding: 12px 14px;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   touch-action: pan-y;
+}
+
+.account-view:hover {
+  border-color: rgba(0, 230, 118, 0.4);
+  box-shadow: 0 0 14px rgba(0, 230, 118, 0.12);
 }
 
 .account-edit {
   position: relative;
   z-index: 1;
   background: var(--tg-secondary-bg);
+  border: 1px solid rgba(0, 230, 118, 0.18);
+  border-left: 3px solid var(--accent);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -151,10 +167,17 @@ main {
 .account-edit input {
   padding: 10px;
   border-radius: 8px;
-  border: 1px solid var(--tg-hint);
+  border: 1px solid rgba(0, 230, 118, 0.3);
   background: var(--tg-bg);
   color: var(--tg-text);
   font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.account-edit input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .edit-actions {
@@ -203,30 +226,75 @@ main {
   text-overflow: ellipsis;
 }
 
+.code-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .account-code {
   font-variant-numeric: tabular-nums;
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 1px;
+  color: var(--accent);
   cursor: pointer;
   padding: 4px 6px;
   border-radius: 8px;
+  transition: background 0.2s ease;
 }
 
 .account-code:hover {
-  background: rgba(127, 127, 127, 0.15);
+  background: var(--accent-soft);
+}
+
+@keyframes codeFlash {
+  0% { text-shadow: 0 0 0 rgba(0, 230, 118, 0); }
+  35% { text-shadow: 0 0 14px var(--accent-glow); }
+  100% { text-shadow: 0 0 0 rgba(0, 230, 118, 0); }
+}
+
+.account-code.flash {
+  animation: codeFlash 0.6s ease;
+}
+
+.ring {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  transform: rotate(-90deg);
+}
+
+.ring-bg {
+  fill: none;
+  stroke: rgba(0, 230, 118, 0.15);
+  stroke-width: 3;
+}
+
+.ring-fg {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear, stroke 0.3s ease;
+}
+
+.ring-fg.low {
+  stroke: var(--danger);
 }
 
 .context-menu {
   position: fixed;
   z-index: 1000;
   background: var(--tg-secondary-bg);
+  border: 1px solid rgba(0, 230, 118, 0.25);
   border-radius: 10px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 230, 118, 0.08);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   min-width: 140px;
+  animation: accountIn 0.15s ease both;
 }
 
 .context-menu button {
@@ -237,14 +305,15 @@ main {
   padding: 10px 14px;
   font-size: 14px;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 
 .context-menu button:hover {
-  background: rgba(127, 127, 127, 0.15);
+  background: var(--accent-soft);
 }
 
 .context-menu button[data-role="remove"] {
-  color: #ff3b30;
+  color: var(--danger);
 }
 
 footer {
@@ -261,11 +330,22 @@ footer {
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 0 16px var(--accent-glow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.import-btn:hover {
+  box-shadow: 0 0 22px var(--accent-glow);
+}
+
+.import-btn:active {
+  transform: scale(0.98);
 }
 
 .import-btn:disabled {
   opacity: 0.6;
   cursor: default;
+  box-shadow: none;
 }
 
 .sync-overlay {
@@ -281,6 +361,7 @@ footer {
 
 .sync-modal {
   background: var(--tg-bg);
+  border: 1px solid rgba(0, 230, 118, 0.25);
   border-radius: 14px;
   padding: 20px;
   width: 100%;
@@ -288,11 +369,14 @@ footer {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  box-shadow: 0 0 40px rgba(0, 230, 118, 0.1);
+  animation: accountIn 0.2s ease both;
 }
 
 .sync-modal h2 {
   margin: 0;
   font-size: 18px;
+  color: var(--accent);
 }
 
 .sync-modal .hint {
@@ -304,14 +388,21 @@ footer {
 .sync-modal input {
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid var(--tg-hint);
+  border: 1px solid rgba(0, 230, 118, 0.3);
   background: var(--tg-secondary-bg);
   color: var(--tg-text);
   font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sync-modal input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .modal-error {
-  color: #ff3b30;
+  color: var(--danger);
   font-size: 13px;
   margin: 0;
 }

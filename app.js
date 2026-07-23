@@ -70,6 +70,7 @@ async function decodeQrFromFile(file) {
 
 const els = {};
 const SWIPE_WIDTH = 112; // px revealed by the edit+delete swipe actions
+const RING_CIRCUMFERENCE = 2 * Math.PI * 15.9155;
 let openSwipeLi = null;
 let activeContextMenu = null;
 let currentPassphrase = null; // kept in memory only, never persisted
@@ -105,7 +106,14 @@ function renderAccountList(accounts) {
           <div class="account-issuer">${escapeHtml(issuer)}</div>
           <div class="account-name">${escapeHtml(name)}</div>
         </div>
-        <div class="account-code" data-role="code" title="Kopyalamak için dokunun">------</div>
+        <div class="code-wrap">
+          <div class="account-code" data-role="code" title="Kopyalamak için dokunun">------</div>
+          <svg class="ring" viewBox="0 0 36 36">
+            <circle class="ring-bg" cx="18" cy="18" r="15.9155"></circle>
+            <circle class="ring-fg" data-role="ring" cx="18" cy="18" r="15.9155"
+              stroke-dasharray="${RING_CIRCUMFERENCE}" stroke-dashoffset="0"></circle>
+          </svg>
+        </div>
       </div>
       <div class="account-edit hidden">
         <input type="text" data-role="edit-issuer" placeholder="Servis adı (ör. Google)" value="${escapeHtml(account.issuer || '')}">
@@ -120,6 +128,7 @@ function renderAccountList(accounts) {
     attachSwipeHandlers(li);
     attachContextMenu(li);
   }
+  updateAllRings();
 }
 
 function closeSwipe(li) {
@@ -253,6 +262,9 @@ async function refreshAllCodes() {
       const code = await window.TOTP.computeTOTPForAccount(account, now);
       codeEl.textContent = code.match(/.{1,3}/g).join(' ');
       codeEl.dataset.rawCode = code;
+      codeEl.classList.remove('flash');
+      void codeEl.offsetWidth; // restart the animation on repeat refreshes
+      codeEl.classList.add('flash');
     } catch {
       codeEl.textContent = 'HATA';
     }
@@ -266,9 +278,20 @@ function updateProgressBar() {
   els.progressBar.classList.toggle('low', remaining <= 5);
 }
 
+function updateAllRings() {
+  const remaining = window.TOTP.secondsRemaining(30);
+  const fraction = remaining / 30;
+  const offset = RING_CIRCUMFERENCE * (1 - fraction);
+  els.list.querySelectorAll('[data-role="ring"]').forEach(ring => {
+    ring.style.strokeDashoffset = offset;
+    ring.classList.toggle('low', remaining <= 5);
+  });
+}
+
 function tick() {
   const remaining = window.TOTP.secondsRemaining(30);
   updateProgressBar();
+  updateAllRings();
   if (remaining === 30 || !tick.initialized) {
     tick.initialized = true;
     refreshAllCodes();
@@ -358,23 +381,6 @@ async function handleFileImport(e) {
     showStatus(`${added} hesap eklendi (toplam ${merged.length}).`);
   } catch (err) {
     showStatus(err.message || 'QR kod okunamadı.', true);
-  }
-}
-
-function applyTelegramTheme(theme) {
-  if (!theme) return;
-  const root = document.documentElement.style;
-  const map = {
-    '--tg-bg': theme.bg_color,
-    '--tg-text': theme.text_color,
-    '--tg-hint': theme.hint_color,
-    '--tg-link': theme.link_color,
-    '--tg-button': theme.button_color,
-    '--tg-button-text': theme.button_text_color,
-    '--tg-secondary-bg': theme.secondary_bg_color,
-  };
-  for (const [cssVar, value] of Object.entries(map)) {
-    if (value) root.setProperty(cssVar, value);
   }
 }
 
@@ -497,8 +503,14 @@ function init() {
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
-    applyTelegramTheme(tg.themeParams);
-    tg.onEvent('themeChanged', () => applyTelegramTheme(tg.themeParams));
+    // Intentionally not adopting tg.themeParams — this app keeps its own
+    // fixed black/green look regardless of the user's Telegram theme.
+    try {
+      tg.setHeaderColor('#060807');
+      tg.setBackgroundColor('#060807');
+    } catch {
+      // older Telegram client without this API — safe to ignore
+    }
   }
 
   const accounts = loadAccounts();
