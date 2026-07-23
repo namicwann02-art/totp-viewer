@@ -197,11 +197,13 @@ main {
    fragile (see git history). JS gives each of the 20 thin bands (which
    together form one 40-unit multi-color dash) an explicit position and
    color every frame; each band is a 2-unit visible segment out of the
-   392-unit path, fine enough to blend into one continuous line. */
+   392-unit path. Flat (butt) caps are required here — round caps on each
+   short segment made adjacent bands look like a string of beads instead
+   of one continuous line. */
 .frame-runner rect {
   fill: none;
   stroke-width: 2;
-  stroke-linecap: round;
+  stroke-linecap: butt;
   vector-effect: non-scaling-stroke;
   stroke-dasharray: 2 390;
 }
