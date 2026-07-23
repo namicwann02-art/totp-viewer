@@ -193,17 +193,29 @@ main {
 
 .frame-runner rect {
   fill: none;
-  stroke: var(--accent);
   stroke-width: 2;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
   stroke-dasharray: 30 362;
-  filter:
-    drop-shadow(0 0 2px #fff)
-    drop-shadow(0 0 6px var(--accent))
-    drop-shadow(0 0 14px var(--accent))
-    drop-shadow(0 0 24px rgba(0, 230, 118, 0.6));
-  animation: frameRunnerMove 5s linear infinite;
+  animation: frameRunnerMove 6s linear infinite;
+}
+
+.fr-red {
+  stroke: #ff1744;
+  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px #ff1744) drop-shadow(0 0 14px #ff1744);
+  animation-delay: 0s;
+}
+
+.fr-green {
+  stroke: #00e676;
+  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px #00e676) drop-shadow(0 0 14px #00e676);
+  animation-delay: -2s;
+}
+
+.fr-blue {
+  stroke: #2979ff;
+  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px #2979ff) drop-shadow(0 0 14px #2979ff);
+  animation-delay: -4s;
 }
 
 @keyframes frameRunnerMove {

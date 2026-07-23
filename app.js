@@ -128,7 +128,9 @@ function renderAccountList(accounts) {
       </div>
       <div class="account-view">
         <svg class="frame-runner" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <rect x="1" y="1" width="98" height="98" rx="6" ry="6"></rect>
+          <rect class="fr-red" x="1" y="1" width="98" height="98" rx="6" ry="6"></rect>
+          <rect class="fr-green" x="1" y="1" width="98" height="98" rx="6" ry="6"></rect>
+          <rect class="fr-blue" x="1" y="1" width="98" height="98" rx="6" ry="6"></rect>
         </svg>
         <div class="account-info">
           <div class="account-issuer">${escapeHtml(issuer)}</div>
