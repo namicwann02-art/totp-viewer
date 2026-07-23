@@ -73,10 +73,11 @@ function renderAccountList(accounts) {
     const li = document.createElement('li');
     li.className = 'account';
     li.dataset.id = account.id;
+    const { issuer, name } = displayLabel(account);
     li.innerHTML = `
       <div class="account-info">
-        <div class="account-issuer">${escapeHtml(account.issuer || 'Bilinmeyen')}</div>
-        <div class="account-name">${escapeHtml(account.name || '')}</div>
+        <div class="account-issuer">${escapeHtml(issuer)}</div>
+        <div class="account-name">${escapeHtml(name)}</div>
       </div>
       <div class="account-code" data-role="code">------</div>
       <button class="copy-btn" data-role="copy" title="Kopyala">⧉</button>
@@ -84,6 +85,21 @@ function renderAccountList(accounts) {
     `;
     els.list.appendChild(li);
   }
+}
+
+// Some accounts have no separate "issuer" field — Google Authenticator
+// often packs it into name as "Issuer:account" instead. Fall back to
+// splitting that, so accounts don't just show up as "Bilinmeyen".
+function displayLabel(account) {
+  if (account.issuer) {
+    return { issuer: account.issuer, name: account.name || '' };
+  }
+  const raw = account.name || '';
+  const sepIndex = raw.indexOf(':');
+  if (sepIndex > -1) {
+    return { issuer: raw.slice(0, sepIndex).trim(), name: raw.slice(sepIndex + 1).trim() };
+  }
+  return { issuer: raw || 'Bilinmeyen', name: '' };
 }
 
 function escapeHtml(str) {
