@@ -99,13 +99,57 @@ main {
 }
 
 .account {
-  display: grid;
-  grid-template-columns: 1fr auto auto auto;
-  align-items: center;
-  gap: 12px;
   background: var(--tg-secondary-bg);
   border-radius: 12px;
   padding: 12px 14px;
+}
+
+.account-view {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.account-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.account-edit input {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--tg-hint);
+  background: var(--tg-bg);
+  color: var(--tg-text);
+  font-size: 14px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-actions button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.edit-actions button[data-role="save-edit"] {
+  background: var(--tg-button);
+  color: var(--tg-button-text);
+}
+
+.edit-actions button[data-role="cancel-edit"] {
+  background: transparent;
+  color: var(--tg-hint);
+  border: 1px solid var(--tg-hint);
 }
 
 .account-info {
@@ -135,7 +179,7 @@ main {
   letter-spacing: 1px;
 }
 
-.copy-btn, .remove-btn {
+.copy-btn, .remove-btn, .edit-btn {
   border: none;
   background: transparent;
   color: var(--tg-hint);

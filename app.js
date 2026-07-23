@@ -75,13 +75,24 @@ function renderAccountList(accounts) {
     li.dataset.id = account.id;
     const { issuer, name } = displayLabel(account);
     li.innerHTML = `
-      <div class="account-info">
-        <div class="account-issuer">${escapeHtml(issuer)}</div>
-        <div class="account-name">${escapeHtml(name)}</div>
+      <div class="account-view">
+        <div class="account-info">
+          <div class="account-issuer">${escapeHtml(issuer)}</div>
+          <div class="account-name">${escapeHtml(name)}</div>
+        </div>
+        <div class="account-code" data-role="code">------</div>
+        <button class="edit-btn" data-role="edit" title="İsim ver">✎</button>
+        <button class="copy-btn" data-role="copy" title="Kopyala">⧉</button>
+        <button class="remove-btn" data-role="remove" title="Kaldır">✕</button>
       </div>
-      <div class="account-code" data-role="code">------</div>
-      <button class="copy-btn" data-role="copy" title="Kopyala">⧉</button>
-      <button class="remove-btn" data-role="remove" title="Kaldır">✕</button>
+      <div class="account-edit hidden">
+        <input type="text" data-role="edit-issuer" placeholder="Servis adı (ör. Google)" value="${escapeHtml(account.issuer || '')}">
+        <input type="text" data-role="edit-name" placeholder="Hesap adı (ör. kullanici@ornek.com)" value="${escapeHtml(account.name || '')}">
+        <div class="edit-actions">
+          <button data-role="save-edit">Kaydet</button>
+          <button data-role="cancel-edit">Vazgeç</button>
+        </div>
+      </div>
     `;
     els.list.appendChild(li);
   }
@@ -146,12 +157,14 @@ function handleListClick(e) {
   if (!li) return;
   const id = li.dataset.id;
 
-  if (e.target.dataset.role === 'remove') {
+  const role = e.target.dataset.role;
+
+  if (role === 'remove') {
     const accounts = loadAccounts().filter(a => a.id !== id);
     saveAccounts(accounts);
     renderAccountList(accounts);
     refreshAllCodes();
-  } else if (e.target.dataset.role === 'copy') {
+  } else if (role === 'copy') {
     const codeEl = li.querySelector('[data-role="code"]');
     const raw = codeEl.dataset.rawCode;
     if (raw) {
@@ -159,6 +172,25 @@ function handleListClick(e) {
       showStatus('Kopyalandı.');
       setTimeout(() => showStatus(''), 1500);
     }
+  } else if (role === 'edit') {
+    li.querySelector('.account-view').classList.add('hidden');
+    li.querySelector('.account-edit').classList.remove('hidden');
+    li.querySelector('[data-role="edit-issuer"]').focus();
+  } else if (role === 'cancel-edit') {
+    li.querySelector('.account-edit').classList.add('hidden');
+    li.querySelector('.account-view').classList.remove('hidden');
+  } else if (role === 'save-edit') {
+    const issuerVal = li.querySelector('[data-role="edit-issuer"]').value.trim();
+    const nameVal = li.querySelector('[data-role="edit-name"]').value.trim();
+    const accounts = loadAccounts();
+    const account = accounts.find(a => a.id === id);
+    if (account) {
+      account.issuer = issuerVal;
+      account.name = nameVal;
+      saveAccounts(accounts);
+    }
+    renderAccountList(accounts);
+    refreshAllCodes();
   }
 }
 
