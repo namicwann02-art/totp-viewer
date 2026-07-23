@@ -547,6 +547,14 @@ async function initCloudSync() {
   }
 }
 
+// Keeps --app-height matched to Telegram's real visible viewport instead of
+// the browser's 100vh (which on mobile WebViews can include area covered by
+// Telegram's own UI chrome, making the page look zoomed in / not fitting).
+function syncViewportHeight(tg) {
+  const height = tg?.viewportStableHeight || tg?.viewportHeight || window.innerHeight;
+  document.documentElement.style.setProperty('--app-height', height + 'px');
+}
+
 function init() {
   els.list = qs('account-list');
   els.emptyState = qs('empty-state');
@@ -570,6 +578,11 @@ function init() {
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
+    try {
+      tg.requestFullscreen?.();
+    } catch {
+      // older Telegram client without this API — expand() above still applies
+    }
     // Intentionally not adopting tg.themeParams — this app keeps its own
     // fixed black/green look regardless of the user's Telegram theme.
     try {
@@ -578,6 +591,11 @@ function init() {
     } catch {
       // older Telegram client without this API — safe to ignore
     }
+    syncViewportHeight(tg);
+    tg.onEvent('viewportChanged', () => syncViewportHeight(tg));
+  } else {
+    syncViewportHeight(null);
+    window.addEventListener('resize', () => syncViewportHeight(null));
   }
 
   const accounts = loadAccounts();
