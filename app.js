@@ -183,6 +183,7 @@ function attachSwipeHandlers(li) {
   let baseX = 0;
   let dragging = false;
   let moved = false;
+  let axisLocked = null; // 'x' or 'y', decided once the gesture is unambiguous
 
   view.addEventListener('touchstart', (e) => {
     if (e.touches.length !== 1) return;
@@ -191,17 +192,30 @@ function attachSwipeHandlers(li) {
     baseX = parseFloat(li.dataset.swipeX || '0');
     dragging = true;
     moved = false;
+    axisLocked = null;
   }, { passive: true });
 
+  // Not passive: once we lock onto a horizontal swipe we need to call
+  // preventDefault() so the browser's own vertical pan (touch-action: pan-y)
+  // doesn't also kick in on the same gesture, which is what caused swipes
+  // to visibly drift the page down at the same time.
   view.addEventListener('touchmove', (e) => {
     if (!dragging) return;
     const dx = e.touches[0].clientX - startX;
     const dy = e.touches[0].clientY - startY;
-    if (Math.abs(dx) < Math.abs(dy)) return; // vertical scroll, let the page handle it
+
+    if (!axisLocked) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return; // too small to tell yet
+      axisLocked = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    }
+
+    if (axisLocked === 'y') return; // vertical scroll — let the page handle it
+
+    e.preventDefault();
     moved = true;
     const next = Math.max(-SWIPE_WIDTH, Math.min(0, baseX + dx));
     view.style.transform = `translateX(${next}px)`;
-  }, { passive: true });
+  }, { passive: false });
 
   view.addEventListener('touchend', () => {
     if (!dragging) return;
