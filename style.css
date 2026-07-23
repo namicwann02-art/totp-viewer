@@ -191,16 +191,16 @@ main {
   overflow: visible;
 }
 
-/* Geometry (x/y/width/height/rx/ry) and the SVG's viewBox are set in JS
-   (initFrameRunner) to the card's real measured pixel size — no
-   preserveAspectRatio stretching, so no distortion of stroke-dasharray.
-   Position (stroke-dashoffset), stroke-dasharray, and color (stroke +
-   filter) are all driven every frame by the rAF loop in app.js, not CSS
-   animations — CSS animation-delay lists combined with per-class
-   specificity proved fragile (see git history). Flat (butt) caps are
-   required — round caps on each short band segment made adjacent bands
-   look like a string of beads instead of one continuous line. */
-.frame-runner rect {
+/* The zigzag "d" path and the SVG's viewBox are set in JS (initFrameRunner)
+   from the card's real measured pixel size — no preserveAspectRatio
+   stretching, so no distortion of stroke-dasharray. Position
+   (stroke-dashoffset), stroke-dasharray, and color (stroke + filter) are
+   all driven every frame by the rAF loop in app.js, not CSS animations —
+   CSS animation-delay lists combined with per-class specificity proved
+   fragile (see git history). Flat (butt) caps are required — round caps
+   on each short band segment made adjacent bands look like a string of
+   beads instead of one continuous line. */
+.frame-runner path {
   fill: none;
   stroke-width: 2;
   stroke-linecap: butt;

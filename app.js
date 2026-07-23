@@ -108,17 +108,40 @@ const FRAME_RUNNER_HUE_SPEED = 360 / 1; // deg/sec — full color cycle every 1s
 const FRAME_RUNNER_BAND_COUNT = 20; // thin bands blending into one smooth line
 const FRAME_RUNNER_BAND_LENGTH = 2; // px per band (20 x 2 = 40px dash)
 const FRAME_RUNNER_SPEED = 392 / 2; // px/sec — tuned so a typical card laps in ~2s, quick orbit
+const FRAME_RUNNER_ZIGZAG_AMPLITUDE = 5; // px the zigzag pokes inward off the straight edge
+const FRAME_RUNNER_ZIGZAG_STEP = 14; // px between zigzag peaks
 
 function frameRunnerSvgMarkup() {
   const bands = Array.from({ length: FRAME_RUNNER_BAND_COUNT }, (_, i) =>
-    `<rect class="fr-band" data-band="${i}"></rect>`
+    `<path class="fr-band" data-band="${i}"></path>`
   ).join('');
   return `<svg class="frame-runner">${bands}</svg>`;
 }
 
-// Sizes the frame-runner SVG's viewBox and its rect's geometry to the
-// card's actual measured pixel dimensions. Must run after the element is
-// laid out in the DOM (getBoundingClientRect needs real layout).
+// Traces a zigzag (sawtooth) path around a w x h rectangle instead of a
+// plain straight border, alternating between the edge itself and a point
+// offset inward by `amplitude` every `step` px, going clockwise from the
+// top-left corner. Returns an SVG path "d" string.
+function buildZigzagRectPath(w, h, amplitude, step) {
+  const pts = [];
+  let i = 0;
+  for (let x = 0; x <= w; x += step, i++) pts.push([x, i % 2 === 0 ? 0 : amplitude]);
+  i = 0;
+  for (let y = 0; y <= h; y += step, i++) pts.push([i % 2 === 0 ? w : w - amplitude, y]);
+  i = 0;
+  for (let x = w; x >= 0; x -= step, i++) pts.push([x, i % 2 === 0 ? h : h - amplitude]);
+  i = 0;
+  for (let y = h; y >= 0; y -= step, i++) pts.push([i % 2 === 0 ? 0 : amplitude, y]);
+  return 'M ' + pts.map((p) => p.join(',')).join(' L ') + ' Z';
+}
+
+// Sizes the frame-runner SVG's viewBox to the card's actual measured pixel
+// dimensions and builds the zigzag path for its bands. Must run after the
+// element is laid out in the DOM (getBoundingClientRect needs real layout).
+// Uses path.getTotalLength() — the browser's own exact path length — for
+// the dash math instead of a hand-computed perimeter formula, so it can't
+// drift out of sync with what's actually rendered (see git history for
+// what went wrong the last few times that assumption didn't hold).
 function initFrameRunner(li) {
   const card = li.querySelector('.account-view');
   const svg = li.querySelector('.frame-runner');
@@ -128,35 +151,32 @@ function initFrameRunner(li) {
   const h = Math.round(box.height);
   if (!w || !h) return;
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-  svg.querySelectorAll('rect').forEach((rect) => {
-    rect.setAttribute('x', 1);
-    rect.setAttribute('y', 1);
-    rect.setAttribute('width', w - 2);
-    rect.setAttribute('height', h - 2);
-    rect.setAttribute('rx', 6);
-    rect.setAttribute('ry', 6);
+  const d = buildZigzagRectPath(w - 2, h - 2, FRAME_RUNNER_ZIGZAG_AMPLITUDE, FRAME_RUNNER_ZIGZAG_STEP);
+  const paths = svg.querySelectorAll('path.fr-band');
+  paths.forEach((path) => {
+    path.setAttribute('d', d);
+    path.setAttribute('transform', 'translate(1,1)');
   });
+  svg.dataset.pathLength = paths[0] ? paths[0].getTotalLength() : 0;
 }
 
 function startFrameRunnerLoop() {
   function tick(timestampMs) {
     const t = timestampMs / 1000;
     document.querySelectorAll('.frame-runner').forEach((svg) => {
-      const w = svg.viewBox.baseVal.width;
-      const h = svg.viewBox.baseVal.height;
-      if (!w || !h) return;
-      const perimeter = 2 * (w + h);
+      const pathLength = Number(svg.dataset.pathLength);
+      if (!pathLength) return;
 
-      svg.querySelectorAll('rect').forEach((rect) => {
-        const bandIndex = Number(rect.dataset.band);
+      svg.querySelectorAll('path.fr-band').forEach((path) => {
+        const bandIndex = Number(path.dataset.band);
         const dashOffset = -((t * FRAME_RUNNER_SPEED) + bandIndex * FRAME_RUNNER_BAND_LENGTH);
-        rect.style.strokeDasharray = `${FRAME_RUNNER_BAND_LENGTH} ${perimeter - FRAME_RUNNER_BAND_LENGTH}`;
-        rect.style.strokeDashoffset = dashOffset;
+        path.style.strokeDasharray = `${FRAME_RUNNER_BAND_LENGTH} ${pathLength - FRAME_RUNNER_BAND_LENGTH}`;
+        path.style.strokeDashoffset = dashOffset;
 
         const hue = ((t * FRAME_RUNNER_HUE_SPEED) + bandIndex * (360 / FRAME_RUNNER_BAND_COUNT)) % 360;
         const color = `hsl(${hue.toFixed(1)}, 100%, 60%)`;
-        rect.style.stroke = color;
-        rect.style.filter =
+        path.style.stroke = color;
+        path.style.filter =
           `drop-shadow(0 0 1px #fff) drop-shadow(0 0 5px ${color}) drop-shadow(0 0 10px ${color}) drop-shadow(0 0 18px ${color})`;
       });
     });
