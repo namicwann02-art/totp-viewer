@@ -1,3 +1,28 @@
+// Self-update: Telegram's WebView can cache this page aggressively, so on
+// every load we check version.json (always cache-busted) against the
+// version baked into this page. If a newer one is live, we redirect to a
+// ?v=<n> URL the WebView has never cached, forcing a real fresh load —
+// no manual BotFather URL changes or "Reload Page" needed anymore.
+async function checkForUpdate() {
+  try {
+    const res = await fetch(`version.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    const latest = data.version;
+    if (!latest || latest === window.APP_VERSION) return;
+    const guardKey = 'totp_update_redirect_v' + latest;
+    if (sessionStorage.getItem(guardKey)) return; // already tried this target once, avoid loops
+    sessionStorage.setItem(guardKey, '1');
+    const url = new URL(location.href);
+    url.searchParams.set('v', latest);
+    location.replace(url.toString());
+  } catch {
+    // offline or blocked — the next open will just retry
+  }
+}
+
+checkForUpdate();
+
 const STORAGE_KEY = 'totpAccounts';
 
 function loadAccounts() {
