@@ -91,44 +91,74 @@ async function decodeQrFromFile(file) {
   }
 }
 
-// --- Neon card-border runner: driven by rAF instead of CSS animations,
-// since CSS animation-delay lists interacting with per-class specificity
-// proved fragile. One single dash travels the border, built from many thin
-// adjacent bands so it blends into one continuous line instead of reading
-// as separate chunks, while its hue sweeps smoothly across the dash's
-// length and keeps drifting over time for a lively neon shimmer. ---
+// --- Neon card-border runner: driven by rAF, one dash built from many
+// thin adjacent bands so it blends into one continuous line, hue sweeping
+// smoothly along it and drifting over time for a lively shimmer.
+//
+// IMPORTANT: the SVG's viewBox is set to the card's REAL pixel size (done
+// in initFrameRunner, after layout), not a normalized 100x100 box stretched
+// via preserveAspectRatio="none". That stretching was the actual bug behind
+// every earlier "looks like several separate pieces" report — a non-square
+// box stretched non-uniformly distorts stroke-dasharray lengths differently
+// on each edge, making the pattern repeat an inconsistent number of times
+// around the path instead of exactly once. Matching viewBox to real pixels
+// 1:1 removes the distortion entirely, no vector-effect hacks needed. ---
 
-const FRAME_RUNNER_PERIMETER = 392; // matches the rect's normalized 100-unit path length
-const FRAME_RUNNER_SPEED = FRAME_RUNNER_PERIMETER / 6; // units/sec — one full lap every 6s
 const FRAME_RUNNER_HUE_SPEED = 360 / 2.5; // deg/sec — full color cycle every 2.5s, lively
 const FRAME_RUNNER_BAND_COUNT = 20; // thin bands blending into one smooth line
-const FRAME_RUNNER_BAND_LENGTH = 2; // units per band (20 x 2 = 40-unit dash)
+const FRAME_RUNNER_BAND_LENGTH = 2; // px per band (20 x 2 = 40px dash)
+const FRAME_RUNNER_SPEED = 392 / 6; // px/sec — tuned so a typical card laps in ~6s
 
 function frameRunnerSvgMarkup() {
   const bands = Array.from({ length: FRAME_RUNNER_BAND_COUNT }, (_, i) =>
-    `<rect class="fr-band" data-band="${i}" x="1" y="1" width="98" height="98" rx="6" ry="6"></rect>`
+    `<rect class="fr-band" data-band="${i}"></rect>`
   ).join('');
-  return `<svg class="frame-runner" viewBox="0 0 100 100" preserveAspectRatio="none">${bands}</svg>`;
+  return `<svg class="frame-runner">${bands}</svg>`;
+}
+
+// Sizes the frame-runner SVG's viewBox and its rect's geometry to the
+// card's actual measured pixel dimensions. Must run after the element is
+// laid out in the DOM (getBoundingClientRect needs real layout).
+function initFrameRunner(li) {
+  const card = li.querySelector('.account-view');
+  const svg = li.querySelector('.frame-runner');
+  if (!card || !svg) return;
+  const box = card.getBoundingClientRect();
+  const w = Math.round(box.width);
+  const h = Math.round(box.height);
+  if (!w || !h) return;
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.querySelectorAll('rect').forEach((rect) => {
+    rect.setAttribute('x', 1);
+    rect.setAttribute('y', 1);
+    rect.setAttribute('width', w - 2);
+    rect.setAttribute('height', h - 2);
+    rect.setAttribute('rx', 6);
+    rect.setAttribute('ry', 6);
+  });
 }
 
 function startFrameRunnerLoop() {
   function tick(timestampMs) {
     const t = timestampMs / 1000;
-    document.querySelectorAll('.frame-runner rect').forEach((rect) => {
-      const bandIndex = Number(rect.dataset.band);
+    document.querySelectorAll('.frame-runner').forEach((svg) => {
+      const w = svg.viewBox.baseVal.width;
+      const h = svg.viewBox.baseVal.height;
+      if (!w || !h) return;
+      const perimeter = 2 * (w + h);
 
-      // All bands share the same travel speed, staggered by exactly one
-      // band-length each, so they stay glued together end-to-end as one
-      // moving dash rather than spreading out around the whole border.
-      const basePosition = (t * FRAME_RUNNER_SPEED) % FRAME_RUNNER_PERIMETER;
-      const dashOffset = -((basePosition + bandIndex * FRAME_RUNNER_BAND_LENGTH) % FRAME_RUNNER_PERIMETER);
-      rect.style.strokeDashoffset = dashOffset;
+      svg.querySelectorAll('rect').forEach((rect) => {
+        const bandIndex = Number(rect.dataset.band);
+        const dashOffset = -((t * FRAME_RUNNER_SPEED) + bandIndex * FRAME_RUNNER_BAND_LENGTH);
+        rect.style.strokeDasharray = `${FRAME_RUNNER_BAND_LENGTH} ${perimeter - FRAME_RUNNER_BAND_LENGTH}`;
+        rect.style.strokeDashoffset = dashOffset;
 
-      const hue = ((t * FRAME_RUNNER_HUE_SPEED) + bandIndex * (360 / FRAME_RUNNER_BAND_COUNT)) % 360;
-      const color = `hsl(${hue.toFixed(1)}, 100%, 60%)`;
-      rect.style.stroke = color;
-      rect.style.filter =
-        `drop-shadow(0 0 1px #fff) drop-shadow(0 0 5px ${color}) drop-shadow(0 0 10px ${color}) drop-shadow(0 0 18px ${color})`;
+        const hue = ((t * FRAME_RUNNER_HUE_SPEED) + bandIndex * (360 / FRAME_RUNNER_BAND_COUNT)) % 360;
+        const color = `hsl(${hue.toFixed(1)}, 100%, 60%)`;
+        rect.style.stroke = color;
+        rect.style.filter =
+          `drop-shadow(0 0 1px #fff) drop-shadow(0 0 5px ${color}) drop-shadow(0 0 10px ${color}) drop-shadow(0 0 18px ${color})`;
+      });
     });
     requestAnimationFrame(tick);
   }
@@ -202,6 +232,7 @@ function renderAccountList(accounts) {
     els.list.appendChild(li);
     attachSwipeHandlers(li);
     attachContextMenu(li);
+    initFrameRunner(li);
   }
   updateAllRings();
 }
