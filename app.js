@@ -251,16 +251,44 @@ function escapeHtml(str) {
   }[c]));
 }
 
-async function refreshAllCodes() {
+function randomDigits(len) {
+  let s = '';
+  for (let i = 0; i < len; i++) s += Math.floor(Math.random() * 10);
+  return s.match(/.{1,3}/g).join(' ');
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Briefly cycles through random digits before settling on the real code —
+// a short "rolling" transition for the moment the old code expires.
+async function scrambleInto(codeEl, finalDisplay, digitCount) {
+  codeEl.classList.add('scrambling');
+  const frames = 5;
+  for (let i = 0; i < frames; i++) {
+    codeEl.textContent = randomDigits(digitCount);
+    await sleep(35);
+  }
+  codeEl.classList.remove('scrambling');
+  codeEl.textContent = finalDisplay;
+}
+
+async function refreshAllCodes(animate = false) {
   const accounts = loadAccounts();
   const now = Date.now();
-  for (const account of accounts) {
+  await Promise.all(accounts.map(async (account) => {
     const li = els.list.querySelector(`li[data-id="${account.id}"]`);
-    if (!li) continue;
+    if (!li) return;
     const codeEl = li.querySelector('[data-role="code"]');
     try {
       const code = await window.TOTP.computeTOTPForAccount(account, now);
-      codeEl.textContent = code.match(/.{1,3}/g).join(' ');
+      const display = code.match(/.{1,3}/g).join(' ');
+      if (animate) {
+        await scrambleInto(codeEl, display, code.length);
+      } else {
+        codeEl.textContent = display;
+      }
       codeEl.dataset.rawCode = code;
       codeEl.classList.remove('flash');
       void codeEl.offsetWidth; // restart the animation on repeat refreshes
@@ -268,7 +296,7 @@ async function refreshAllCodes() {
     } catch {
       codeEl.textContent = 'HATA';
     }
-  }
+  }));
 }
 
 function updateProgressBar() {
@@ -293,8 +321,9 @@ function tick() {
   updateProgressBar();
   updateAllRings();
   if (remaining === 30 || !tick.initialized) {
+    const isFirstLoad = !tick.initialized;
     tick.initialized = true;
-    refreshAllCodes();
+    refreshAllCodes(!isFirstLoad);
   }
 }
 
