@@ -12,6 +12,20 @@ function saveAccounts(accounts) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
 }
 
+// Saves locally and, if the cloud vault is unlocked, pushes the encrypted
+// update to Telegram Cloud Storage so other devices see it too.
+function persistAccounts(accounts) {
+  saveAccounts(accounts);
+  if (currentPassphrase) {
+    window.Sync.pushAccounts(accounts, currentPassphrase)
+      .then(() => {
+        showStatus('Bulutla senkronize edildi.');
+        setTimeout(() => showStatus(''), 1200);
+      })
+      .catch(err => showStatus('Senkron hatası: ' + (err.message || err), true));
+  }
+}
+
 function mergeAccounts(existing, incoming) {
   const key = (a) => `${a.issuer}::${a.name}::${a.secretB64}`;
   const seen = new Set(existing.map(key));
@@ -58,6 +72,7 @@ const els = {};
 const SWIPE_WIDTH = 112; // px revealed by the edit+delete swipe actions
 let openSwipeLi = null;
 let activeContextMenu = null;
+let currentPassphrase = null; // kept in memory only, never persisted
 
 function qs(id) {
   return document.getElementById(id);
@@ -280,7 +295,7 @@ function saveEdit(li, id) {
   if (account) {
     account.issuer = issuerVal;
     account.name = nameVal;
-    saveAccounts(accounts);
+    persistAccounts(accounts);
   }
   renderAccountList(accounts);
   refreshAllCodes();
@@ -288,7 +303,7 @@ function saveEdit(li, id) {
 
 function removeAccountById(id) {
   const accounts = loadAccounts().filter(a => a.id !== id);
-  saveAccounts(accounts);
+  persistAccounts(accounts);
   renderAccountList(accounts);
   refreshAllCodes();
 }
@@ -337,7 +352,7 @@ async function handleFileImport(e) {
     }
     const existing = loadAccounts();
     const { merged, added } = mergeAccounts(existing, incoming);
-    saveAccounts(merged);
+    persistAccounts(merged);
     renderAccountList(merged);
     await refreshAllCodes();
     showStatus(`${added} hesap eklendi (toplam ${merged.length}).`);
@@ -363,12 +378,110 @@ function applyTelegramTheme(theme) {
   }
 }
 
+function hideSyncModal() {
+  els.syncOverlay.classList.add('hidden');
+}
+
+function showUnlockModal(errorMsg) {
+  els.syncModalContent.innerHTML = `
+    <h2>Kasa Kilidini Aç</h2>
+    <p class="hint">Hesaplarınız Telegram Cloud'da şifreli olarak saklanıyor. Devam etmek için parolanızı girin.</p>
+    ${errorMsg ? `<p class="modal-error">${escapeHtml(errorMsg)}</p>` : ''}
+    <input type="password" id="sync-passphrase" placeholder="Parola">
+    <button id="sync-unlock-btn" class="import-btn">Kilidi Aç</button>
+    <button id="sync-skip-btn" class="link-btn">Şimdilik atla, sadece bu cihazda kullan</button>
+  `;
+  els.syncOverlay.classList.remove('hidden');
+  const passInput = qs('sync-passphrase');
+  const submit = async () => {
+    const pass = passInput.value;
+    const btn = qs('sync-unlock-btn');
+    btn.disabled = true;
+    btn.textContent = 'Açılıyor...';
+    try {
+      const remoteAccounts = await window.Sync.pullAccounts(pass);
+      currentPassphrase = pass;
+      const accounts = remoteAccounts || [];
+      saveAccounts(accounts);
+      hideSyncModal();
+      renderAccountList(accounts);
+      await refreshAllCodes();
+    } catch {
+      showUnlockModal('Parola yanlış ya da veri okunamadı. Tekrar deneyin.');
+    }
+  };
+  qs('sync-unlock-btn').addEventListener('click', submit);
+  qs('sync-skip-btn').addEventListener('click', hideSyncModal);
+  passInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  passInput.focus();
+}
+
+function showSetupModal() {
+  els.syncModalContent.innerHTML = `
+    <h2>Bulut Senkronunu Kur</h2>
+    <p class="hint">Bu cihazdaki hesapları Telegram hesabınıza bağlı, şifreli bir kasada saklayacağız —
+    böylece başka bir cihazda da otomatik görünürler. Parolayı unutursanız veriler kurtarılamaz.</p>
+    <input type="password" id="sync-pass1" placeholder="Yeni parola (en az 8 karakter)">
+    <input type="password" id="sync-pass2" placeholder="Parolayı tekrar girin">
+    <p class="modal-error hidden" id="sync-setup-error"></p>
+    <button id="sync-setup-btn" class="import-btn">Parola Oluştur ve Senkronize Et</button>
+    <button id="sync-setup-skip-btn" class="link-btn">Şimdilik atla, sadece bu cihazda kullan</button>
+  `;
+  els.syncOverlay.classList.remove('hidden');
+  qs('sync-setup-skip-btn').addEventListener('click', hideSyncModal);
+  const errEl = qs('sync-setup-error');
+  const submit = async () => {
+    const p1 = qs('sync-pass1').value;
+    const p2 = qs('sync-pass2').value;
+    if (p1.length < 8) {
+      errEl.textContent = 'Parola en az 8 karakter olmalı.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    if (p1 !== p2) {
+      errEl.textContent = 'Parolalar eşleşmiyor.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    const btn = qs('sync-setup-btn');
+    btn.disabled = true;
+    btn.textContent = 'Kuruluyor...';
+    try {
+      const accounts = loadAccounts();
+      await window.Sync.pushAccounts(accounts, p1);
+      currentPassphrase = p1;
+      hideSyncModal();
+      showStatus('Bulut senkronu kuruldu.');
+      setTimeout(() => showStatus(''), 2000);
+    } catch (err) {
+      errEl.textContent = 'Senkronizasyon başarısız: ' + (err.message || err);
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Parola Oluştur ve Senkronize Et';
+    }
+  };
+  qs('sync-setup-btn').addEventListener('click', submit);
+}
+
+async function initCloudSync() {
+  if (!window.Sync.hasCloudStorage()) return;
+  try {
+    const exists = await window.Sync.remoteVaultExists();
+    if (exists) showUnlockModal();
+    else showSetupModal();
+  } catch (err) {
+    showStatus('Bulut senkron kontrol edilemedi: ' + (err.message || err), true);
+  }
+}
+
 function init() {
   els.list = qs('account-list');
   els.emptyState = qs('empty-state');
   els.status = qs('status');
   els.progressBar = qs('progress-bar');
   els.fileInput = qs('file-input');
+  els.syncOverlay = qs('sync-overlay');
+  els.syncModalContent = qs('sync-modal-content');
 
   els.list.addEventListener('click', handleListClick);
   els.fileInput.addEventListener('change', handleFileImport);
@@ -392,6 +505,8 @@ function init() {
   renderAccountList(accounts);
   refreshAllCodes();
   setInterval(tick, 1000);
+
+  initCloudSync();
 }
 
 document.addEventListener('DOMContentLoaded', init);
