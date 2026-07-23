@@ -231,8 +231,18 @@ main {
 .account-info {
   position: relative;
   min-width: 0;
-  overflow: hidden;
   border-radius: 6px;
+}
+
+.info-fill {
+  position: relative;
+  z-index: 1;
+  display: block;
+  min-width: 0;
+  margin: 2px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: var(--tg-secondary-bg);
 }
 
 .account-issuer {
@@ -251,6 +261,42 @@ main {
   text-overflow: ellipsis;
 }
 
+/* Rotating light-border ring: an oversized spinning conic-gradient sits
+   behind an opaque "fill" layer inset by 2px, so only a thin ring of the
+   rotating light peeks out around the edge. */
+.border-spin {
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.border-spin::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 250%;
+  height: 250%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 260deg,
+    var(--accent) 300deg,
+    rgba(210, 255, 225, 0.95) 325deg,
+    var(--accent) 345deg,
+    transparent 360deg
+  );
+  transform: translate(-50%, -50%) rotate(0deg);
+  animation: spinBorder 3s linear infinite;
+}
+
+@keyframes spinBorder {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
 .code-wrap {
   display: flex;
   align-items: center;
@@ -261,57 +307,38 @@ main {
   position: relative;
   z-index: 0;
   display: inline-flex;
-  align-items: center;
-  font-variant-numeric: tabular-nums;
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  color: var(--accent);
   cursor: pointer;
-  padding: 7px 11px;
   border-radius: 10px;
-  background: rgba(0, 230, 118, 0.08);
-  border: 1px solid rgba(0, 230, 118, 0.25);
-  overflow: hidden;
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
-}
-
-.account-code:hover {
-  background: var(--accent-soft);
-  border-color: rgba(0, 230, 118, 0.45);
+  transition: transform 0.15s ease;
 }
 
 .account-code:active {
   transform: scale(0.94);
 }
 
+.code-fill {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  margin: 2px;
+  padding: 7px 11px;
+  border-radius: 8px;
+  background: rgba(0, 230, 118, 0.08);
+  transition: background 0.2s ease;
+  pointer-events: none;
+}
+
+.account-code:hover .code-fill {
+  background: var(--accent-soft);
+}
+
 .code-text {
-  pointer-events: none;
-}
-
-/* A thin bright streak that travels fully from the left edge to the right
-   edge of the box, like a quick lightning flash, then hides until the next
-   pass. Fixed pixel width so it looks identical in narrow and wide boxes;
-   `left` (not transform) is used so the travel distance is always the
-   full width of that particular box. */
-@keyframes lightningSweep {
-  0%, 100% { left: -24px; opacity: 0; }
-  4% { opacity: 0.9; }
-  14% { left: calc(100% + 24px); opacity: 0; }
-}
-
-.account-code::after,
-.account-info::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -24px;
-  width: 18px;
-  height: 100%;
-  background: linear-gradient(115deg, transparent, rgba(200, 255, 220, 0.9), var(--accent), transparent);
-  transform: skewX(-20deg);
-  animation: lightningSweep 5s ease-in-out infinite;
-  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--accent);
 }
 
 @keyframes codeFlash {
@@ -320,26 +347,12 @@ main {
   100% { text-shadow: 0 0 0 rgba(0, 230, 118, 0); }
 }
 
-.account-code.flash {
+.account-code.flash .code-text {
   animation: codeFlash 0.6s ease;
 }
 
-.account-code.scrambling {
+.account-code.scrambling .code-text {
   color: rgba(0, 230, 118, 0.5);
-}
-
-@keyframes codeBgPulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
-}
-
-.account-code::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: radial-gradient(circle at 30% 50%, rgba(0, 230, 118, 0.18), transparent 70%);
-  animation: codeBgPulse 3.5s ease-in-out infinite;
 }
 
 .ring-wrap {

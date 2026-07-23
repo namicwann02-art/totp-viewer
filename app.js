@@ -128,12 +128,16 @@ function renderAccountList(accounts) {
       </div>
       <div class="account-view">
         <div class="account-info">
-          <div class="account-issuer">${escapeHtml(issuer)}</div>
-          <div class="account-name">${escapeHtml(name)}</div>
+          <span class="border-spin"></span>
+          <span class="info-fill">
+            <div class="account-issuer">${escapeHtml(issuer)}</div>
+            <div class="account-name">${escapeHtml(name)}</div>
+          </span>
         </div>
         <div class="code-wrap">
           <div class="account-code" data-role="code" title="Kopyalamak için dokunun">
-            <span class="code-text" data-role="code-text">------</span>
+            <span class="border-spin"></span>
+            <span class="code-fill"><span class="code-text" data-role="code-text">------</span></span>
           </div>
           <div class="ring-wrap">
             <svg class="ring" viewBox="0 0 36 36">
