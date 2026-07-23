@@ -179,6 +179,37 @@ main {
   pointer-events: none;
 }
 
+/* Neon light chasing the whole card's border (not the inner boxes). A
+   bright, heavily-glowing dash traveling around the real card edges. */
+.account-view > .frame-runner {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.frame-runner rect {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 30 362;
+  filter:
+    drop-shadow(0 0 2px #fff)
+    drop-shadow(0 0 6px var(--accent))
+    drop-shadow(0 0 14px var(--accent))
+    drop-shadow(0 0 24px rgba(0, 230, 118, 0.6));
+  animation: frameRunnerMove 5s linear infinite;
+}
+
+@keyframes frameRunnerMove {
+  to { stroke-dashoffset: -392; }
+}
+
 .account-view > * {
   position: relative;
   z-index: 1;

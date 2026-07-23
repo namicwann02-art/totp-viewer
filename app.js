@@ -127,6 +127,9 @@ function renderAccountList(accounts) {
         <button class="action-btn action-remove" data-role="remove" title="Sil">✕</button>
       </div>
       <div class="account-view">
+        <svg class="frame-runner" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <rect x="1" y="1" width="98" height="98" rx="6" ry="6"></rect>
+        </svg>
         <div class="account-info">
           <div class="account-issuer">${escapeHtml(issuer)}</div>
           <div class="account-name">${escapeHtml(name)}</div>
