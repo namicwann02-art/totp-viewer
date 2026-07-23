@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>2FA Kodları</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <header>
+    <h1>2FA Kodları</h1>
+    <div class="progress-track"><div id="progress-bar" class="progress-fill"></div></div>
+  </header>
+
+  <main>
+    <div id="status" class="status hidden"></div>
+
+    <div id="empty-state" class="empty-state hidden">
+      <p>Henüz hesap eklenmedi.</p>
+      <p class="hint">Google Authenticator'da "Hesapları Aktar" ile oluşturduğunuz QR kodunun
+      ekran görüntüsünü aşağıdaki butonla yükleyin. Secret'lar yalnızca bu cihazda saklanır.</p>
+    </div>
+
+    <ul id="account-list"></ul>
+  </main>
+
+  <footer>
+    <button id="import-btn" class="import-btn">QR Kod İçe Aktar</button>
+    <input type="file" id="file-input" accept="image/*" capture="environment" class="hidden">
+  </footer>
+
+  <script src="vendor/jsQR.js"></script>
+  <script src="totp.js"></script>
+  <script src="migration-parser.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
