@@ -163,26 +163,8 @@ function renderAccountList(accounts) {
     els.list.appendChild(li);
     attachSwipeHandlers(li);
     attachContextMenu(li);
-    syncFrameRunnerSpeed(li);
   }
   updateAllRings();
-}
-
-// The code chip and name box are very different real sizes, so the same
-// fixed animation duration made the light dash visibly faster around the
-// bigger box. Set each box's duration from its own actual perimeter so the
-// dash travels at the same real speed (px/sec) in both, keeping them
-// looking like one continuous, synced motion.
-function syncFrameRunnerSpeed(li) {
-  const PX_PER_SECOND = 90;
-  li.querySelectorAll('.frame-runner').forEach((svg) => {
-    const box = svg.parentElement.getBoundingClientRect();
-    const perimeter = 2 * (box.width + box.height);
-    if (!perimeter) return;
-    const duration = Math.max(perimeter / PX_PER_SECOND, 1);
-    const rect = svg.querySelector('rect');
-    if (rect) rect.style.animationDuration = duration.toFixed(2) + 's';
-  });
 }
 
 function closeSwipe(li) {

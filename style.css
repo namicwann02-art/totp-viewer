@@ -293,6 +293,14 @@ main {
   to { stroke-dashoffset: -388; }
 }
 
+/* The code chip is much smaller than the name box, so the same lap
+   duration made its dash look noticeably faster (a full loop reads as
+   quicker motion on a small shape than the same loop on a big one).
+   Slow the chip's loop down instead of speeding the name box up. */
+.account-code .frame-runner rect {
+  animation-duration: 6s;
+}
+
 .code-wrap {
   display: flex;
   align-items: center;
