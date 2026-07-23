@@ -110,11 +110,14 @@ function renderAccountList(accounts) {
           <div class="account-code" data-role="code" title="Kopyalamak için dokunun">
             <span class="bolt">⚡</span><span class="code-text" data-role="code-text">------</span>
           </div>
-          <svg class="ring" viewBox="0 0 36 36">
-            <circle class="ring-bg" cx="18" cy="18" r="15.9155"></circle>
-            <circle class="ring-fg" data-role="ring" cx="18" cy="18" r="15.9155"
-              stroke-dasharray="${RING_CIRCUMFERENCE}" stroke-dashoffset="0"></circle>
-          </svg>
+          <div class="ring-wrap">
+            <svg class="ring" viewBox="0 0 36 36">
+              <circle class="ring-bg" cx="18" cy="18" r="15.9155"></circle>
+              <circle class="ring-fg" data-role="ring" cx="18" cy="18" r="15.9155"
+                stroke-dasharray="${RING_CIRCUMFERENCE}" stroke-dashoffset="0"></circle>
+            </svg>
+            <span class="ring-label" data-role="ring-label">30</span>
+          </div>
         </div>
       </div>
       <div class="account-edit hidden">
@@ -313,9 +316,12 @@ function updateAllRings() {
   const remaining = window.TOTP.secondsRemaining(30);
   const fraction = remaining / 30;
   const offset = RING_CIRCUMFERENCE * (1 - fraction);
-  els.list.querySelectorAll('[data-role="ring"]').forEach(ring => {
+  els.list.querySelectorAll('.ring-wrap').forEach(wrap => {
+    const ring = wrap.querySelector('[data-role="ring"]');
+    const label = wrap.querySelector('[data-role="ring-label"]');
     ring.style.strokeDashoffset = offset;
     ring.classList.toggle('low', remaining <= 5);
+    if (label) label.textContent = remaining;
   });
 }
 
