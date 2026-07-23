@@ -107,7 +107,9 @@ function renderAccountList(accounts) {
           <div class="account-name">${escapeHtml(name)}</div>
         </div>
         <div class="code-wrap">
-          <div class="account-code" data-role="code" title="Kopyalamak için dokunun">------</div>
+          <div class="account-code" data-role="code" title="Kopyalamak için dokunun">
+            <span class="bolt">⚡</span><span class="code-text" data-role="code-text">------</span>
+          </div>
           <svg class="ring" viewBox="0 0 36 36">
             <circle class="ring-bg" cx="18" cy="18" r="15.9155"></circle>
             <circle class="ring-fg" data-role="ring" cx="18" cy="18" r="15.9155"
@@ -263,15 +265,15 @@ function sleep(ms) {
 
 // Briefly cycles through random digits before settling on the real code —
 // a short "rolling" transition for the moment the old code expires.
-async function scrambleInto(codeEl, finalDisplay, digitCount) {
+async function scrambleInto(codeEl, textEl, finalDisplay, digitCount) {
   codeEl.classList.add('scrambling');
   const frames = 5;
   for (let i = 0; i < frames; i++) {
-    codeEl.textContent = randomDigits(digitCount);
+    textEl.textContent = randomDigits(digitCount);
     await sleep(35);
   }
   codeEl.classList.remove('scrambling');
-  codeEl.textContent = finalDisplay;
+  textEl.textContent = finalDisplay;
 }
 
 async function refreshAllCodes(animate = false) {
@@ -281,20 +283,21 @@ async function refreshAllCodes(animate = false) {
     const li = els.list.querySelector(`li[data-id="${account.id}"]`);
     if (!li) return;
     const codeEl = li.querySelector('[data-role="code"]');
+    const textEl = codeEl.querySelector('[data-role="code-text"]');
     try {
       const code = await window.TOTP.computeTOTPForAccount(account, now);
       const display = code.match(/.{1,3}/g).join(' ');
       if (animate) {
-        await scrambleInto(codeEl, display, code.length);
+        await scrambleInto(codeEl, textEl, display, code.length);
       } else {
-        codeEl.textContent = display;
+        textEl.textContent = display;
       }
       codeEl.dataset.rawCode = code;
       codeEl.classList.remove('flash');
       void codeEl.offsetWidth; // restart the animation on repeat refreshes
       codeEl.classList.add('flash');
     } catch {
-      codeEl.textContent = 'HATA';
+      textEl.textContent = 'HATA';
     }
   }));
 }
