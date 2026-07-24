@@ -352,6 +352,11 @@ main {
   color: var(--accent);
 }
 
+.account-code.copied .code-text {
+  font-size: 13px;
+  letter-spacing: normal;
+}
+
 @keyframes codeFlash {
   0% { text-shadow: 0 0 0 rgba(0, 230, 118, 0); }
   35% { text-shadow: 0 0 16px var(--accent-glow); }

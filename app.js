@@ -476,14 +476,25 @@ async function removeAccountById(id) {
   refreshAllCodes();
 }
 
+// Feedback is shown inline inside the tapped code chip itself (swapping its
+// text briefly) rather than via the page-level status banner. On the
+// Telegram mobile WebView, toggling that banner's visibility scrolled the
+// whole mini app to the top on every copy; a purely local text swap inside
+// an element that's already on screen can't move anything else on the page.
 function copyCode(li) {
   const codeEl = li.querySelector('.account-code');
-  const raw = codeEl.dataset.rawCode;
-  if (raw) {
-    navigator.clipboard?.writeText(raw);
-    showStatus('Kopyalandı.');
-    setTimeout(() => showStatus(''), 1500);
-  }
+  const textEl = codeEl?.querySelector('[data-role="code-text"]');
+  const raw = codeEl?.dataset.rawCode;
+  if (!codeEl || !textEl || !raw) return;
+  navigator.clipboard?.writeText(raw);
+  const restoreText = textEl.textContent;
+  clearTimeout(codeEl._copiedTimer);
+  codeEl.classList.add('copied');
+  textEl.textContent = 'Kopyalandı';
+  codeEl._copiedTimer = setTimeout(() => {
+    codeEl.classList.remove('copied');
+    textEl.textContent = restoreText;
+  }, 1200);
 }
 
 function handleListClick(e) {
