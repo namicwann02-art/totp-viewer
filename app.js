@@ -23,6 +23,21 @@ async function checkForUpdate() {
 
 checkForUpdate();
 
+// Access gate: only this Telegram account may see the app's UI. Anyone
+// else opening the mini app (or opening the bare GitHub Pages URL outside
+// Telegram, where there's no Telegram user at all) gets a blank page.
+// Note: initDataUnsafe is NOT cryptographically verified client-side (real
+// verification needs the bot token server-side), so this is a convenience
+// gate against casual/curious visitors, not a hard security boundary — the
+// actual secrets are still protected separately by the passphrase-encrypted
+// Telegram Cloud Storage vault.
+const ALLOWED_TELEGRAM_USER_ID = 8588409246;
+
+function isAuthorizedUser() {
+  const id = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+  return Number(id) === ALLOWED_TELEGRAM_USER_ID;
+}
+
 const STORAGE_KEY = 'totpAccounts';
 
 function loadAccounts() {
@@ -616,4 +631,10 @@ function init() {
   initCloudSync();
 }
 
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+  if (!isAuthorizedUser()) {
+    document.documentElement.innerHTML = '';
+    return;
+  }
+  init();
+});
