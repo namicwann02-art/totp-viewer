@@ -563,6 +563,7 @@ function showUnlockModal(errorMsg) {
     </div>
     <button id="sync-unlock-btn" class="import-btn">Kilidi Aç</button>
     <button id="sync-view-local-btn" class="link-btn">Bu cihazdaki hesapları senkron olmadan görüntüle</button>
+    ${loadAccounts().length > 0 ? '<button id="sync-reset-btn" class="link-btn">Parolamı unuttum — bu cihazdaki hesapları temel alarak sıfırla</button>' : ''}
   `;
   showSyncOverlay();
   const passInput = qs('sync-passphrase');
@@ -573,6 +574,7 @@ function showUnlockModal(errorMsg) {
     renderAccountList(accounts);
     await refreshAllCodes();
   });
+  qs('sync-reset-btn')?.addEventListener('click', showResetModal);
   const submit = async () => {
     const pass = passInput.value;
     const btn = qs('sync-unlock-btn');
@@ -594,6 +596,70 @@ function showUnlockModal(errorMsg) {
   qs('sync-unlock-btn').addEventListener('click', submit);
   passInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
   passInput.focus();
+}
+
+// Recovery path for a forgotten/mismatched cloud passphrase: re-encrypts
+// THIS DEVICE's local account cache under a brand-new passphrase and
+// overwrites the cloud vault with it. Only safe because the local cache
+// (loadAccounts) already holds a plaintext copy independent of the cloud
+// passphrase — see the "view local accounts" link in showUnlockModal.
+// Other devices will need the new passphrase after this runs.
+function showResetModal() {
+  const localAccounts = loadAccounts();
+  els.syncModalContent.innerHTML = `
+    <h2>Parolayı Sıfırla</h2>
+    <p class="hint">Bu cihazda kayıtlı ${localAccounts.length} hesabı, belirleyeceğiniz yeni bir parolayla
+    buluta yeniden yükleyeceğiz. Bu işlem buluttaki mevcut kaydın <b>üzerine yazar</b> — eski parola artık
+    işe yaramaz ve diğer cihazlar bundan sonra bu yeni parolayı kullanmalı.</p>
+    <div class="pass-field">
+      <input type="password" id="reset-pass1" placeholder="Yeni parola (en az 8 karakter)" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">
+      <button type="button" class="pass-toggle" id="reset-pass1-toggle" title="Parolayı göster">👁</button>
+    </div>
+    <div class="pass-field">
+      <input type="password" id="reset-pass2" placeholder="Parolayı tekrar girin" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">
+      <button type="button" class="pass-toggle" id="reset-pass2-toggle" title="Parolayı göster">👁</button>
+    </div>
+    <p class="modal-error hidden" id="reset-error"></p>
+    <button id="reset-submit-btn" class="import-btn">Parolayı Sıfırla ve Yükle</button>
+    <button id="reset-cancel-btn" class="link-btn">Vazgeç, kilidi tekrar dene</button>
+  `;
+  showSyncOverlay();
+  wirePassToggle('reset-pass1-toggle', 'reset-pass1');
+  wirePassToggle('reset-pass2-toggle', 'reset-pass2');
+  const errEl = qs('reset-error');
+  qs('reset-cancel-btn').addEventListener('click', () => showUnlockModal());
+  qs('reset-submit-btn').addEventListener('click', async () => {
+    const p1 = qs('reset-pass1').value;
+    const p2 = qs('reset-pass2').value;
+    if (p1.length < 8) {
+      errEl.textContent = 'Parola en az 8 karakter olmalı.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    if (p1 !== p2) {
+      errEl.textContent = 'Parolalar eşleşmiyor.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    const btn = qs('reset-submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Yükleniyor...';
+    try {
+      await window.Sync.pushAccounts(localAccounts, p1);
+      currentPassphrase = p1;
+      rememberPassphrase(p1);
+      hideSyncModal();
+      renderAccountList(localAccounts);
+      await refreshAllCodes();
+      showStatus('Parola sıfırlandı, bulut güncellendi.');
+      setTimeout(() => showStatus(''), 2000);
+    } catch (err) {
+      errEl.textContent = 'Yükleme başarısız: ' + (err.message || err);
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Parolayı Sıfırla ve Yükle';
+    }
+  });
 }
 
 function showSetupModal() {
