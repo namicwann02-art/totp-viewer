@@ -53,16 +53,23 @@ function saveAccounts(accounts) {
 }
 
 // Saves locally and, if the cloud vault is unlocked, pushes the encrypted
-// update to Telegram Cloud Storage so other devices see it too.
-function persistAccounts(accounts) {
+// update to Telegram Cloud Storage so other devices see it too. Callers
+// must await this — it used to fire-and-forget the cloud push, so closing
+// the mini app right after an edit could kill the push mid-flight; the
+// next open would then pull the still-stale cloud copy and silently
+// revert the edit. Awaiting it doesn't make closing impossible, but it
+// keeps the "syncing…" status up so there's a visible cue not to close yet.
+async function persistAccounts(accounts) {
   saveAccounts(accounts);
   if (currentPassphrase) {
-    window.Sync.pushAccounts(accounts, currentPassphrase)
-      .then(() => {
-        showStatus('Bulutla senkronize edildi.');
-        setTimeout(() => showStatus(''), 1200);
-      })
-      .catch(err => showStatus('Senkron hatası: ' + (err.message || err), true));
+    showStatus('Senkronize ediliyor...');
+    try {
+      await window.Sync.pushAccounts(accounts, currentPassphrase);
+      showStatus('Bulutla senkronize edildi.');
+      setTimeout(() => showStatus(''), 1200);
+    } catch (err) {
+      showStatus('Senkron hatası: ' + (err.message || err), true);
+    }
   }
 }
 
@@ -439,7 +446,7 @@ function cancelEdit(li) {
   li.querySelector('.account-view').classList.remove('hidden');
 }
 
-function saveEdit(li, id) {
+async function saveEdit(li, id) {
   const issuerVal = li.querySelector('[data-role="edit-issuer"]').value.trim();
   const nameVal = li.querySelector('[data-role="edit-name"]').value.trim();
   const accounts = loadAccounts();
@@ -447,15 +454,15 @@ function saveEdit(li, id) {
   if (account) {
     account.issuer = issuerVal;
     account.name = nameVal;
-    persistAccounts(accounts);
+    await persistAccounts(accounts);
   }
   renderAccountList(accounts);
   refreshAllCodes();
 }
 
-function removeAccountById(id) {
+async function removeAccountById(id) {
   const accounts = loadAccounts().filter(a => a.id !== id);
-  persistAccounts(accounts);
+  await persistAccounts(accounts);
   renderAccountList(accounts);
   refreshAllCodes();
 }
@@ -504,7 +511,7 @@ async function handleFileImport(e) {
     }
     const existing = loadAccounts();
     const { merged, added } = mergeAccounts(existing, incoming);
-    persistAccounts(merged);
+    await persistAccounts(merged);
     renderAccountList(merged);
     await refreshAllCodes();
     showStatus(`${added} hesap eklendi (toplam ${merged.length}).`);
