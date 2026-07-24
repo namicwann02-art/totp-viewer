@@ -554,10 +554,17 @@ function showUnlockModal(errorMsg) {
       <button type="button" class="pass-toggle" id="sync-passphrase-toggle" title="Parolayı göster">👁</button>
     </div>
     <button id="sync-unlock-btn" class="import-btn">Kilidi Aç</button>
+    <button id="sync-view-local-btn" class="link-btn">Bu cihazdaki hesapları senkron olmadan görüntüle</button>
   `;
   showSyncOverlay();
   const passInput = qs('sync-passphrase');
   wirePassToggle('sync-passphrase-toggle', 'sync-passphrase');
+  qs('sync-view-local-btn').addEventListener('click', () => {
+    hideSyncModal();
+    const accounts = loadAccounts();
+    renderAccountList(accounts);
+    refreshAllCodes();
+  });
   const submit = async () => {
     const pass = passInput.value;
     const btn = qs('sync-unlock-btn');

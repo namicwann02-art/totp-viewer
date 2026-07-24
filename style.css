@@ -568,3 +568,13 @@ body.modal-open {
   font-size: 13px;
   margin: 0;
 }
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--tg-hint);
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 4px;
+}
