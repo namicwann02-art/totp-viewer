@@ -671,12 +671,19 @@ function init() {
     window.addEventListener('resize', () => syncViewportHeight(null));
   }
 
-  const accounts = loadAccounts();
-  renderAccountList(accounts);
-  refreshAllCodes();
   setInterval(tick, 1000);
 
-  initCloudSync();
+  // If a cloud vault is in play, don't render anything from the local
+  // cache until it's actually unlocked (silently via a remembered
+  // passphrase, or via the modal) — otherwise the real accounts/codes
+  // flash on screen for the moment before the lock check finishes.
+  if (window.Sync.hasCloudStorage()) {
+    initCloudSync();
+  } else {
+    const accounts = loadAccounts();
+    renderAccountList(accounts);
+    refreshAllCodes();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
