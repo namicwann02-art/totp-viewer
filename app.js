@@ -535,7 +535,7 @@ function showUnlockModal(errorMsg) {
     <h2>Kasa Kilidini Aç</h2>
     <p class="hint">Hesaplarınız Telegram Cloud'da şifreli olarak saklanıyor. Devam etmek için parolanızı girin.</p>
     ${errorMsg ? `<p class="modal-error">${escapeHtml(errorMsg)}</p>` : ''}
-    <input type="password" id="sync-passphrase" placeholder="Parola">
+    <input type="password" id="sync-passphrase" placeholder="Parola" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">
     <button id="sync-unlock-btn" class="import-btn">Kilidi Aç</button>
   `;
   showSyncOverlay();
@@ -568,8 +568,8 @@ function showSetupModal() {
     <h2>Bulut Senkronunu Kur</h2>
     <p class="hint">Bu cihazdaki hesapları Telegram hesabınıza bağlı, şifreli bir kasada saklayacağız —
     böylece başka bir cihazda da otomatik görünürler. Parolayı unutursanız veriler kurtarılamaz.</p>
-    <input type="password" id="sync-pass1" placeholder="Yeni parola (en az 8 karakter)">
-    <input type="password" id="sync-pass2" placeholder="Parolayı tekrar girin">
+    <input type="password" id="sync-pass1" placeholder="Yeni parola (en az 8 karakter)" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">
+    <input type="password" id="sync-pass2" placeholder="Parolayı tekrar girin" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">
     <p class="modal-error hidden" id="sync-setup-error"></p>
     <button id="sync-setup-btn" class="import-btn">Parola Oluştur ve Senkronize Et</button>
   `;
