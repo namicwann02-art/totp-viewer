@@ -186,7 +186,7 @@ function renderAccountList(accounts) {
         <button class="action-btn action-remove" data-role="remove" title="Sil">✕</button>
       </div>
       <div class="account-view">
-        <div class="account-info">
+        <div class="account-info" data-role="code" title="Kopyalamak için dokunun">
           <div class="account-issuer">${escapeHtml(issuer)}</div>
           <div class="account-name">${escapeHtml(name)}</div>
         </div>
@@ -482,9 +482,9 @@ function handleListClick(e) {
   if (!li) return;
   if (li.dataset.suppressClick) return; // this click was the tail end of a swipe drag
   const id = li.dataset.id;
-  const role = e.target.dataset.role;
+  const role = e.target.closest('[data-role]')?.dataset.role;
 
-  if (role === 'code') {
+  if (role === 'code' || role === 'code-text') {
     copyCode(li);
   } else if (role === 'remove') {
     removeAccountById(id);

@@ -286,6 +286,12 @@ main {
   padding: 2px 6px;
   border-radius: 6px;
   background: var(--tg-secondary-bg);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.account-info:active {
+  background: var(--accent-soft);
 }
 
 .account-issuer {
