@@ -530,16 +530,34 @@ function showSyncOverlay() {
   document.body.classList.add('modal-open'); // blocks background scroll while the modal is up
 }
 
+// Lets the user see exactly what they typed before submitting — added
+// after a report of "wrong password" on the Telegram mobile app despite
+// the same password working on desktop, to rule out mobile keyboard
+// autocapitalize/autocorrect mangling the input silently.
+function wirePassToggle(toggleId, inputId) {
+  const toggleBtn = qs(toggleId);
+  const input = qs(inputId);
+  toggleBtn.addEventListener('click', () => {
+    const showing = input.type === 'text';
+    input.type = showing ? 'password' : 'text';
+    toggleBtn.textContent = showing ? '👁' : '🙈';
+  });
+}
+
 function showUnlockModal(errorMsg) {
   els.syncModalContent.innerHTML = `
     <h2>Kasa Kilidini Aç</h2>
     <p class="hint">Hesaplarınız Telegram Cloud'da şifreli olarak saklanıyor. Devam etmek için parolanızı girin.</p>
     ${errorMsg ? `<p class="modal-error">${escapeHtml(errorMsg)}</p>` : ''}
-    <input type="password" id="sync-passphrase" placeholder="Parola" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">
+    <div class="pass-field">
+      <input type="password" id="sync-passphrase" placeholder="Parola" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">
+      <button type="button" class="pass-toggle" id="sync-passphrase-toggle" title="Parolayı göster">👁</button>
+    </div>
     <button id="sync-unlock-btn" class="import-btn">Kilidi Aç</button>
   `;
   showSyncOverlay();
   const passInput = qs('sync-passphrase');
+  wirePassToggle('sync-passphrase-toggle', 'sync-passphrase');
   const submit = async () => {
     const pass = passInput.value;
     const btn = qs('sync-unlock-btn');
@@ -568,12 +586,20 @@ function showSetupModal() {
     <h2>Bulut Senkronunu Kur</h2>
     <p class="hint">Bu cihazdaki hesapları Telegram hesabınıza bağlı, şifreli bir kasada saklayacağız —
     böylece başka bir cihazda da otomatik görünürler. Parolayı unutursanız veriler kurtarılamaz.</p>
-    <input type="password" id="sync-pass1" placeholder="Yeni parola (en az 8 karakter)" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">
-    <input type="password" id="sync-pass2" placeholder="Parolayı tekrar girin" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">
+    <div class="pass-field">
+      <input type="password" id="sync-pass1" placeholder="Yeni parola (en az 8 karakter)" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">
+      <button type="button" class="pass-toggle" id="sync-pass1-toggle" title="Parolayı göster">👁</button>
+    </div>
+    <div class="pass-field">
+      <input type="password" id="sync-pass2" placeholder="Parolayı tekrar girin" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">
+      <button type="button" class="pass-toggle" id="sync-pass2-toggle" title="Parolayı göster">👁</button>
+    </div>
     <p class="modal-error hidden" id="sync-setup-error"></p>
     <button id="sync-setup-btn" class="import-btn">Parola Oluştur ve Senkronize Et</button>
   `;
   showSyncOverlay();
+  wirePassToggle('sync-pass1-toggle', 'sync-pass1');
+  wirePassToggle('sync-pass2-toggle', 'sync-pass2');
   const errEl = qs('sync-setup-error');
   const submit = async () => {
     const p1 = qs('sync-pass1').value;

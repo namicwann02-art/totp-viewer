@@ -540,6 +540,29 @@ body.modal-open {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
+.pass-field {
+  position: relative;
+  display: flex;
+}
+
+.pass-field input {
+  flex: 1;
+  padding-right: 40px !important;
+}
+
+.pass-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 16px;
+  padding: 6px 8px;
+  cursor: pointer;
+  line-height: 1;
+}
+
 .modal-error {
   color: var(--danger);
   font-size: 13px;
