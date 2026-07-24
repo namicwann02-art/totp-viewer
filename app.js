@@ -142,6 +142,16 @@ function getRememberedPassphrase() {
   return localStorage.getItem(REMEMBER_PASS_KEY);
 }
 
+// Manual lock: cancels the remembered-for-30-minutes window immediately
+// and re-prompts for the passphrase, same as if it had simply expired.
+function lockNow() {
+  clearRememberedPassphrase();
+  currentPassphrase = null;
+  els.list.innerHTML = '';
+  els.emptyState.classList.add('hidden');
+  initCloudSync();
+}
+
 function qs(id) {
   return document.getElementById(id);
 }
@@ -640,6 +650,12 @@ function init() {
   els.list.addEventListener('click', handleListClick);
   els.fileInput.addEventListener('change', handleFileImport);
   qs('import-btn').addEventListener('click', () => els.fileInput.click());
+
+  if (window.Sync.hasCloudStorage()) {
+    const lockBtn = qs('lock-btn');
+    lockBtn.classList.remove('hidden');
+    lockBtn.addEventListener('click', lockNow);
+  }
 
   document.addEventListener('click', (e) => {
     if (openSwipeLi && !openSwipeLi.contains(e.target)) {
