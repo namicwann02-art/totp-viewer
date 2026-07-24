@@ -378,29 +378,37 @@ async function scrambleInto(codeEl, textEl, finalDisplay, digitCount) {
 }
 
 async function refreshAllCodes(animate = false) {
-  const accounts = loadAccounts();
-  const now = Date.now();
-  await Promise.all(accounts.map(async (account) => {
-    const li = els.list.querySelector(`li[data-id="${account.id}"]`);
-    if (!li) return;
-    const codeEl = li.querySelector('[data-role="code"]');
-    const textEl = codeEl.querySelector('[data-role="code-text"]');
-    try {
-      const code = await window.TOTP.computeTOTPForAccount(account, now);
-      const display = code.match(/.{1,3}/g).join(' ');
-      if (animate) {
-        await scrambleInto(codeEl, textEl, display, code.length);
-      } else {
-        textEl.textContent = display;
+  try {
+    const accounts = loadAccounts();
+    const now = Date.now();
+    await Promise.all(accounts.map(async (account) => {
+      const li = els.list.querySelector(`li[data-id="${account.id}"]`);
+      if (!li) return;
+      const codeEl = li.querySelector('[data-role="code"]');
+      const textEl = codeEl.querySelector('[data-role="code-text"]');
+      try {
+        const code = await window.TOTP.computeTOTPForAccount(account, now);
+        const display = code.match(/.{1,3}/g).join(' ');
+        if (animate) {
+          await scrambleInto(codeEl, textEl, display, code.length);
+        } else {
+          textEl.textContent = display;
+        }
+        codeEl.dataset.rawCode = code;
+        codeEl.classList.remove('flash');
+        void codeEl.offsetWidth; // restart the animation on repeat refreshes
+        codeEl.classList.add('flash');
+      } catch (err) {
+        textEl.textContent = 'HATA';
+        console.error('TOTP hesaplanamadı:', account.issuer, account.name, err);
       }
-      codeEl.dataset.rawCode = code;
-      codeEl.classList.remove('flash');
-      void codeEl.offsetWidth; // restart the animation on repeat refreshes
-      codeEl.classList.add('flash');
-    } catch {
-      textEl.textContent = 'HATA';
-    }
-  }));
+    }));
+  } catch (err) {
+    // top-level failure (e.g. loadAccounts() returning something unexpected) used to
+    // leave every code box stuck on its "------" placeholder with zero visible cause
+    showStatus('Kodlar hesaplanamadı: ' + (err.message || err), true);
+    console.error('refreshAllCodes failed:', err);
+  }
 }
 
 function updateProgressBar() {
@@ -559,11 +567,11 @@ function showUnlockModal(errorMsg) {
   showSyncOverlay();
   const passInput = qs('sync-passphrase');
   wirePassToggle('sync-passphrase-toggle', 'sync-passphrase');
-  qs('sync-view-local-btn').addEventListener('click', () => {
+  qs('sync-view-local-btn').addEventListener('click', async () => {
     hideSyncModal();
     const accounts = loadAccounts();
     renderAccountList(accounts);
-    refreshAllCodes();
+    await refreshAllCodes();
   });
   const submit = async () => {
     const pass = passInput.value;
