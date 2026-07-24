@@ -101,11 +101,17 @@ main {
 }
 
 .status {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 88px;
+  z-index: 40;
   padding: 10px 12px;
   border-radius: 10px;
   background: var(--tg-secondary-bg);
-  margin-bottom: 12px;
   font-size: 14px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
 }
 
 .status.error {
