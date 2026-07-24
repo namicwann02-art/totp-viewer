@@ -186,7 +186,7 @@ function renderAccountList(accounts) {
         <button class="action-btn action-remove" data-role="remove" title="Sil">✕</button>
       </div>
       <div class="account-view">
-        <div class="account-info" data-role="code" title="Kopyalamak için dokunun">
+        <div class="account-info" data-role="copy-code" title="Kopyalamak için dokunun">
           <div class="account-issuer">${escapeHtml(issuer)}</div>
           <div class="account-name">${escapeHtml(name)}</div>
         </div>
@@ -384,8 +384,9 @@ async function refreshAllCodes(animate = false) {
     await Promise.all(accounts.map(async (account) => {
       const li = els.list.querySelector(`li[data-id="${account.id}"]`);
       if (!li) return;
-      const codeEl = li.querySelector('[data-role="code"]');
-      const textEl = codeEl.querySelector('[data-role="code-text"]');
+      const codeEl = li.querySelector('.account-code');
+      const textEl = codeEl?.querySelector('[data-role="code-text"]');
+      if (!codeEl || !textEl) return;
       try {
         const code = await window.TOTP.computeTOTPForAccount(account, now);
         const display = code.match(/.{1,3}/g).join(' ');
@@ -476,7 +477,7 @@ async function removeAccountById(id) {
 }
 
 function copyCode(li) {
-  const codeEl = li.querySelector('[data-role="code"]');
+  const codeEl = li.querySelector('.account-code');
   const raw = codeEl.dataset.rawCode;
   if (raw) {
     navigator.clipboard?.writeText(raw);
@@ -492,7 +493,7 @@ function handleListClick(e) {
   const id = li.dataset.id;
   const role = e.target.closest('[data-role]')?.dataset.role;
 
-  if (role === 'code' || role === 'code-text') {
+  if (role === 'code' || role === 'code-text' || role === 'copy-code') {
     copyCode(li);
   } else if (role === 'remove') {
     removeAccountById(id);
