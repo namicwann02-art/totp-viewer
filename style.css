@@ -449,12 +449,20 @@ footer {
 .sync-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--tg-bg);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   z-index: 2000;
+}
+
+/* Set on <body> while the passphrase modal is open, so the account list
+   underneath can't be scrolled/dragged even though the overlay above it
+   is fully opaque and already blocks seeing it. */
+body.modal-open {
+  overflow: hidden;
+  height: 100%;
 }
 
 .sync-modal {
@@ -503,13 +511,4 @@ footer {
   color: var(--danger);
   font-size: 13px;
   margin: 0;
-}
-
-.link-btn {
-  background: transparent;
-  border: none;
-  color: var(--tg-hint);
-  font-size: 13px;
-  cursor: pointer;
-  padding: 4px;
 }

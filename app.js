@@ -478,6 +478,12 @@ async function handleFileImport(e) {
 
 function hideSyncModal() {
   els.syncOverlay.classList.add('hidden');
+  document.body.classList.remove('modal-open');
+}
+
+function showSyncOverlay() {
+  els.syncOverlay.classList.remove('hidden');
+  document.body.classList.add('modal-open'); // blocks background scroll while the modal is up
 }
 
 function showUnlockModal(errorMsg) {
@@ -487,9 +493,8 @@ function showUnlockModal(errorMsg) {
     ${errorMsg ? `<p class="modal-error">${escapeHtml(errorMsg)}</p>` : ''}
     <input type="password" id="sync-passphrase" placeholder="Parola">
     <button id="sync-unlock-btn" class="import-btn">Kilidi Aç</button>
-    <button id="sync-skip-btn" class="link-btn">Şimdilik atla, sadece bu cihazda kullan</button>
   `;
-  els.syncOverlay.classList.remove('hidden');
+  showSyncOverlay();
   const passInput = qs('sync-passphrase');
   const submit = async () => {
     const pass = passInput.value;
@@ -509,7 +514,6 @@ function showUnlockModal(errorMsg) {
     }
   };
   qs('sync-unlock-btn').addEventListener('click', submit);
-  qs('sync-skip-btn').addEventListener('click', hideSyncModal);
   passInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
   passInput.focus();
 }
@@ -523,10 +527,8 @@ function showSetupModal() {
     <input type="password" id="sync-pass2" placeholder="Parolayı tekrar girin">
     <p class="modal-error hidden" id="sync-setup-error"></p>
     <button id="sync-setup-btn" class="import-btn">Parola Oluştur ve Senkronize Et</button>
-    <button id="sync-setup-skip-btn" class="link-btn">Şimdilik atla, sadece bu cihazda kullan</button>
   `;
-  els.syncOverlay.classList.remove('hidden');
-  qs('sync-setup-skip-btn').addEventListener('click', hideSyncModal);
+  showSyncOverlay();
   const errEl = qs('sync-setup-error');
   const submit = async () => {
     const p1 = qs('sync-pass1').value;
