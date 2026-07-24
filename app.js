@@ -113,7 +113,34 @@ const SWIPE_WIDTH = 112; // px revealed by the edit+delete swipe actions
 const RING_CIRCUMFERENCE = 2 * Math.PI * 15.9155;
 let openSwipeLi = null;
 let activeContextMenu = null;
-let currentPassphrase = null; // kept in memory only, never persisted
+let currentPassphrase = null; // kept in memory for the running session
+
+// "Remember this device" for 30 minutes: after a successful unlock/setup,
+// the passphrase is cached in this device's own localStorage (never sent
+// anywhere) so re-opening the mini app within that window skips the
+// passphrase prompt. Past 30 minutes it's cleared and the prompt returns.
+const REMEMBER_DURATION_MS = 30 * 60 * 1000;
+const REMEMBER_PASS_KEY = 'totp_remember_pass';
+const REMEMBER_UNTIL_KEY = 'totp_remember_until';
+
+function rememberPassphrase(pass) {
+  localStorage.setItem(REMEMBER_PASS_KEY, pass);
+  localStorage.setItem(REMEMBER_UNTIL_KEY, String(Date.now() + REMEMBER_DURATION_MS));
+}
+
+function clearRememberedPassphrase() {
+  localStorage.removeItem(REMEMBER_PASS_KEY);
+  localStorage.removeItem(REMEMBER_UNTIL_KEY);
+}
+
+function getRememberedPassphrase() {
+  const until = Number(localStorage.getItem(REMEMBER_UNTIL_KEY) || 0);
+  if (!until || Date.now() > until) {
+    clearRememberedPassphrase();
+    return null;
+  }
+  return localStorage.getItem(REMEMBER_PASS_KEY);
+}
 
 function qs(id) {
   return document.getElementById(id);
@@ -504,6 +531,7 @@ function showUnlockModal(errorMsg) {
     try {
       const remoteAccounts = await window.Sync.pullAccounts(pass);
       currentPassphrase = pass;
+      rememberPassphrase(pass);
       const accounts = remoteAccounts || [];
       saveAccounts(accounts);
       hideSyncModal();
@@ -550,6 +578,7 @@ function showSetupModal() {
       const accounts = loadAccounts();
       await window.Sync.pushAccounts(accounts, p1);
       currentPassphrase = p1;
+      rememberPassphrase(p1);
       hideSyncModal();
       showStatus('Bulut senkronu kuruldu.');
       setTimeout(() => showStatus(''), 2000);
@@ -567,8 +596,25 @@ async function initCloudSync() {
   if (!window.Sync.hasCloudStorage()) return;
   try {
     const exists = await window.Sync.remoteVaultExists();
-    if (exists) showUnlockModal();
-    else showSetupModal();
+    if (!exists) {
+      showSetupModal();
+      return;
+    }
+    const remembered = getRememberedPassphrase();
+    if (remembered) {
+      try {
+        const remoteAccounts = await window.Sync.pullAccounts(remembered);
+        currentPassphrase = remembered;
+        const accounts = remoteAccounts || [];
+        saveAccounts(accounts);
+        renderAccountList(accounts);
+        await refreshAllCodes();
+        return; // unlocked silently — within this device's 30-minute window
+      } catch {
+        clearRememberedPassphrase(); // stale/wrong — fall through to prompting
+      }
+    }
+    showUnlockModal();
   } catch (err) {
     showStatus('Bulut senkron kontrol edilemedi: ' + (err.message || err), true);
   }
