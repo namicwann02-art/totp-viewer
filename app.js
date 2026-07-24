@@ -309,10 +309,10 @@ function sleep(ms) {
 // a short "rolling" transition for the moment the old code expires.
 async function scrambleInto(codeEl, textEl, finalDisplay, digitCount) {
   codeEl.classList.add('scrambling');
-  const frames = 5;
+  const frames = 9; // more cycles = more noticeable
   for (let i = 0; i < frames; i++) {
     textEl.textContent = randomDigits(digitCount);
-    await sleep(35);
+    await sleep(26); // 35ms * 0.75 — 25% faster per frame
   }
   codeEl.classList.remove('scrambling');
   textEl.textContent = finalDisplay;
